@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Czy fotowoltaika mi się opłaci? Kalkulator na realnych danych</title>
 <meta name="description" content="Kalkulator opłacalności fotowoltaiki i magazynu energii, liczony godzina po godzinie na zmierzonym roku pracy realnego domu.">
+<!-- Favikona wpisana w dokument jako data URI - zaden dodatkowy plik i zadne zapytanie
+     sieciowe (przegladarka i tak prosi o /favicon.ico, a bez tego dostaje 404). -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%231d9e75'/%3E%3Ccircle cx='32' cy='22' r='9' fill='%23ffd166'/%3E%3Cpath d='M12 44 L32 32 L52 44 Z' fill='%23ffffff'/%3E%3Crect x='18' y='44' width='28' height='10' fill='%23ffffff'/%3E%3C/svg%3E">
 <style>
   :root{
     --bg:#ffffff; --surface:#f7f8f6; --ink:#1a1d1a; --muted:#5f6560; --faint:#9aa09a;
@@ -56,6 +59,12 @@
   .chartbox{background:#fff; border:1px solid var(--line); border-radius:14px; padding:18px 16px 12px; margin:20px 0;}
   .chartbox h3{margin:0 0 2px; font-size:15px; font-weight:600;}
   .chartbox p.cap{margin:0 0 12px; font-size:12.5px; color:var(--muted);}
+  /* Wysokosc MUSI byc ustalona na kontenerze. Przy maintainAspectRatio:false Chart.js
+     dopasowuje canvas do rodzica - jesli rodzic nie ma wlasnej wysokosci, canvas rozpycha
+     rodzica, rodzic canvas i wykres rosnie w nieskonczonosc przy kazdym przeliczeniu. */
+  .cwrap{position:relative; width:100%; height:300px;}
+  .cwrap canvas{position:absolute; inset:0;}
+  @media(max-width:600px){ .cwrap{height:240px;} }
 
   .callout{background:#eef6f1; border-left:4px solid var(--green); border-radius:0 12px 12px 0;
     padding:15px 19px; margin:20px 0;}
@@ -185,13 +194,13 @@
     <h3>Rok miesiąc po miesiącu</h3>
     <p class="cap">Zima to nie jest ten sam dom co lato. Widać, dlaczego sama fotowoltaika
     nie uniezależnia od sieci w domu ogrzewanym prądem.</p>
-    <canvas id="wykresMies" height="150"></canvas>
+    <div class="cwrap"><canvas id="wykresMies"></canvas></div>
   </div>
 
   <div class="chartbox">
     <h3>Kiedy inwestycja wychodzi na zero</h3>
     <p class="cap">Skumulowany bilans: nakład na starcie, potem oszczędności rok po roku.</p>
-    <canvas id="wykresZwrot" height="150"></canvas>
+    <div class="cwrap"><canvas id="wykresZwrot"></canvas></div>
   </div>
 </section>
 
