@@ -12,7 +12,7 @@ import {
 } from '../src/pricing.js';
 
 const profile = JSON.parse(readFileSync(new URL('./profiles_raw.json', import.meta.url)));
-const rce = JSON.parse(readFileSync(new URL('../data/rce.json', import.meta.url))).rce;
+const rce = (await import('../data/rce.js')).default.rce;
 
 test('stawki zgadzaja sie z oficjalna taryfa PGE na 2026', () => {
   // Ceny za energie elektryczna dla grup G, zatwierdzone przez Prezesa URE na 2026.
