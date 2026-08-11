@@ -1,0 +1,10 @@
+{
+  "name": "kalkulator-pv",
+  "version": "0.1.0",
+  "description": "Kalkulator oplacalnosci fotowoltaiki i magazynu energii na zmierzonym profilu realnego domu",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/"
+  }
+}

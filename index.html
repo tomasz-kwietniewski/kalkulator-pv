@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Czy fotowoltaika mi się opłaci? Kalkulator na realnych danych</title>
+<meta name="description" content="Kalkulator opłacalności fotowoltaiki i magazynu energii, liczony godzina po godzinie na zmierzonym roku pracy realnego domu.">
+<style>
+  :root{
+    --bg:#ffffff; --surface:#f7f8f6; --ink:#1a1d1a; --muted:#5f6560; --faint:#9aa09a;
+    --line:#e4e7e2; --green:#1d9e75; --green-d:#0f6e56; --amber:#ba7517; --coral:#d85a30;
+    --blue:#2f6fb0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:var(--bg); line-height:1.6; font-size:15px;
+    -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:960px; margin:0 auto; padding:40px 24px 80px;}
+  header.top{border-bottom:2px solid var(--ink); padding-bottom:20px; margin-bottom:28px;}
+  .eyebrow{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--green-d); font-weight:600;}
+  h1{font-size:29px; font-weight:650; margin:8px 0 8px; letter-spacing:-.01em;}
+  .sub{color:var(--muted); font-size:15.5px; max-width:680px;}
+  h2{font-size:20px; font-weight:640; margin:40px 0 4px; letter-spacing:-.01em;}
+  h2 .n{color:var(--green); font-weight:700; margin-right:9px;}
+  .lead{color:var(--muted); margin:0 0 18px; max-width:700px;}
+
+  .panel{background:var(--surface); border-radius:14px; padding:20px 22px; margin:22px 0;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px 20px;}
+  label{display:block; font-size:13px; color:var(--muted); font-weight:600; margin-bottom:5px;}
+  label .hint{display:block; font-weight:400; color:var(--faint); font-size:11.5px; margin-top:2px;}
+  input[type=number],select{width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:9px;
+    font-size:15px; font-family:inherit; background:#fff; color:var(--ink);}
+  input[type=range]{width:100%;}
+  .rangerow{display:flex; align-items:center; gap:12px;}
+  .rangerow output{font-weight:700; font-size:16px; min-width:74px; text-align:right;}
+  .checkrow{display:flex; align-items:center; gap:8px; margin-top:8px;}
+  .checkrow input{width:auto;}
+  .checkrow label{margin:0; font-weight:500; color:var(--ink); font-size:14px;}
+
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; margin:22px 0;}
+  .card{background:var(--surface); border-radius:14px; padding:16px 18px;}
+  .card .lab{font-size:12.5px; color:var(--muted); line-height:1.35;}
+  .card .val{font-size:27px; font-weight:700; margin-top:6px; letter-spacing:-.02em;}
+  .card .val.g{color:var(--green-d);} .card .val.a{color:var(--amber);} .card .val.c{color:var(--coral);}
+  .card .foot{font-size:11.5px; color:var(--faint); margin-top:3px;}
+
+  table{width:100%; border-collapse:collapse; margin:16px 0; font-size:13.5px;}
+  th,td{text-align:right; padding:9px 10px; border-bottom:1px solid var(--line);}
+  th:first-child,td:first-child{text-align:left;}
+  thead th{font-size:12px; color:var(--muted); font-weight:600; border-bottom:1.5px solid var(--line);}
+  tbody tr.najlepszy{background:#eef6f1;}
+  tbody tr.najlepszy td{font-weight:650;}
+  .tabwrap{overflow-x:auto;}
+
+  .chartbox{background:#fff; border:1px solid var(--line); border-radius:14px; padding:18px 16px 12px; margin:20px 0;}
+  .chartbox h3{margin:0 0 2px; font-size:15px; font-weight:600;}
+  .chartbox p.cap{margin:0 0 12px; font-size:12.5px; color:var(--muted);}
+
+  .callout{background:#eef6f1; border-left:4px solid var(--green); border-radius:0 12px 12px 0;
+    padding:15px 19px; margin:20px 0;}
+  .callout.warn{background:#fbf3e6; border-left-color:var(--amber);}
+  .callout.info{background:#eef3f9; border-left-color:var(--blue);}
+  .callout b{font-weight:650;}
+  .callout p{margin:8px 0 0;} .callout p:first-child{margin-top:0;}
+
+  details{margin:18px 0; border:1px solid var(--line); border-radius:12px; padding:0 18px;}
+  details[open]{padding-bottom:16px;}
+  summary{cursor:pointer; padding:14px 0; font-weight:600; font-size:14.5px;}
+  .btnrow{display:flex; flex-wrap:wrap; gap:10px; margin:18px 0;}
+  button.akcja{border:1px solid var(--line); background:#fff; padding:10px 16px; border-radius:10px;
+    font-size:14px; font-family:inherit; font-weight:600; color:var(--ink); cursor:pointer;}
+  button.akcja:hover{background:var(--surface);}
+  .pasek{position:relative; height:8px; background:var(--line); border-radius:5px; margin:10px 0 6px;}
+  .pasek .zakres{position:absolute; height:100%; background:#cfe6db; border-radius:5px;}
+  .pasek .znacznik{position:absolute; width:3px; height:16px; background:var(--coral); top:-4px; border-radius:2px;}
+  .paseklab{display:flex; justify-content:space-between; font-size:11.5px; color:var(--faint);}
+  footer{margin-top:56px; padding-top:20px; border-top:1px solid var(--line); font-size:12.5px; color:var(--faint);}
+  a{color:var(--green-d);}
+  .zrodlo{font-size:12.5px; color:var(--faint); margin-top:6px;}
+
+  @media print{
+    .noprint{display:none !important;}
+    body{font-size:11pt;} .wrap{padding:0; max-width:none;}
+    details{border:0; padding:0;} details summary{display:none;}
+    .chartbox,.panel,.card{break-inside:avoid;}
+    h2{margin-top:22px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">Osiedle w Musułach</div>
+  <h1>Czy fotowoltaika i magazyn energii mi się opłacą?</h1>
+  <p class="sub">Ten kalkulator nie zgaduje. Liczy godzina po godzinie przez cały rok, na
+  <b>zmierzonym profilu pracy sąsiedniego domu</b> - takiego samego jak Twój: drewniany
+  szkieletowy, w pełni elektryczny, z pompami ciepła. Rok danych z licznika falownika
+  co 5 minut, zweryfikowany fakturami.</p>
+</header>
+
+<section class="noprint">
+  <h2><span class="n">1</span>Twój dom</h2>
+  <p class="lead">Wystarczy roczne zużycie z faktury. Resztę można zostawić tak, jak jest.</p>
+  <div class="panel">
+    <div class="grid">
+      <div>
+        <label for="zuzycie">Roczne zużycie prądu
+          <span class="hint">kWh z faktury. Na tym osiedlu zwykle 8 000 - 15 000.</span></label>
+        <input type="number" id="zuzycie" value="11000" min="1000" max="40000" step="500">
+      </div>
+      <div>
+        <label for="auto">Samochód elektryczny
+          <span class="hint">Roczny przebieg w km. Zero, jeśli nie masz.</span></label>
+        <input type="number" id="auto" value="0" min="0" max="60000" step="1000">
+      </div>
+      <div>
+        <label for="orientacja">Ustawienie dachu
+          <span class="hint">Decyduje nie tylko ile, ale i kiedy powstaje prąd.</span></label>
+        <select id="orientacja">
+          <option value="poludnie">Południe</option>
+          <option value="poludnieWschodZachod" selected>Południowy wschód lub zachód</option>
+          <option value="wschodZachod">Wschód-zachód (dwie połacie)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <h2><span class="n">2</span>Instalacja, którą rozważasz</h2>
+  <div class="panel">
+    <div class="grid">
+      <div>
+        <label for="kwp">Moc fotowoltaiki</label>
+        <div class="rangerow">
+          <input type="range" id="kwp" value="9" min="0" max="20" step="0.5">
+          <output id="kwpOut">9 kWp</output>
+        </div>
+      </div>
+      <div>
+        <label for="magazyn">Magazyn energii
+          <span class="hint">Pojemność nominalna z oferty.</span></label>
+        <div class="rangerow">
+          <input type="range" id="magazyn" value="15" min="0" max="30" step="1">
+          <output id="magazynOut">15 kWh</output>
+        </div>
+      </div>
+      <div>
+        <label for="grupa">Taryfa</label>
+        <select id="grupa">
+          <option value="G11">G11 - jedna cena całą dobę</option>
+          <option value="G12">G12 - taniej w nocy</option>
+          <option value="G12w" selected>G12w - taniej w nocy i w weekendy</option>
+          <option value="dynamiczna">Dynamiczna (ceny giełdowe)</option>
+        </select>
+      </div>
+    </div>
+    <div class="checkrow">
+      <input type="checkbox" id="eps">
+      <label for="eps">Z zasilaniem awaryjnym (EPS) - dopłata ok. 2 900 zł</label>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">3</span>Wynik</h2>
+  <p class="lead" id="podsumowanie"></p>
+  <div class="cards" id="karty"></div>
+
+  <div class="tabwrap">
+    <table id="tabela">
+      <thead><tr>
+        <th>Wariant</th><th>Rachunek roczny</th><th>Oszczędność</th>
+        <th>Autokonsumpcja</th><th>Samowystarczalność</th><th>Nakład po uldze</th><th>Zwrot</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <p class="zrodlo">Rachunek obejmuje energię, dystrybucję, opłaty stałe, mocową, OZE,
+  kogeneracyjną, jakościową, abonament i VAT - czyli to, co realnie widać na fakturze.</p>
+
+  <div class="callout info" id="taryfaInfo"></div>
+
+  <div class="chartbox">
+    <h3>Rok miesiąc po miesiącu</h3>
+    <p class="cap">Zima to nie jest ten sam dom co lato. Widać, dlaczego sama fotowoltaika
+    nie uniezależnia od sieci w domu ogrzewanym prądem.</p>
+    <canvas id="wykresMies" height="150"></canvas>
+  </div>
+
+  <div class="chartbox">
+    <h3>Kiedy inwestycja wychodzi na zero</h3>
+    <p class="cap">Skumulowany bilans: nakład na starcie, potem oszczędności rok po roku.</p>
+    <canvas id="wykresZwrot" height="150"></canvas>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">4</span>Koszt i dofinansowanie</h2>
+  <div class="panel">
+    <div class="grid">
+      <div>
+        <label for="koszt">Koszt instalacji
+          <span class="hint">Wpisz kwotę z oferty. Domyślnie wyliczamy z cen z 2025.</span></label>
+        <input type="number" id="koszt" value="0" min="0" max="300000" step="1000">
+      </div>
+      <div>
+        <label for="dotacja">Dotacja
+          <span class="hint">Mój Prąd 6.0 zakończony. Trwa nabór KPO na magazyny.</span></label>
+        <input type="number" id="dotacja" value="0" min="0" max="100000" step="500">
+      </div>
+      <div>
+        <label for="pit">Ulga termomodernizacyjna
+          <span class="hint">Odliczenie od dochodu, nie zwrot wydatku.</span></label>
+        <select id="pit">
+          <option value="skala12" selected>Rozliczam PIT wg skali (12%)</option>
+          <option value="skala32">Rozliczam PIT wg skali (32%)</option>
+          <option value="liniowy">Podatek liniowy (19%)</option>
+          <option value="ryczalt">Ryczałt (12%)</option>
+          <option value="brak">Nie płacę PIT - ulga nic mi nie da</option>
+        </select>
+      </div>
+    </div>
+    <div class="pasek" id="pasekOfert"><div class="zakres"></div><div class="znacznik"></div></div>
+    <div class="paseklab">
+      <span>43 446 zł</span>
+      <span>rozpiętość sześciu ofert zebranych na tym osiedlu w 2025</span>
+      <span>68 273 zł</span>
+    </div>
+    <div class="callout warn" id="dotacjeInfo" style="margin-bottom:0"></div>
+  </div>
+</section>
+
+<details class="noprint">
+  <summary>Parametry zaawansowane</summary>
+  <div class="grid">
+    <div><label for="wzrostCen">Wzrost cen energii (% rocznie)</label>
+      <input type="number" id="wzrostCen" value="4" min="-5" max="15" step="0.5"></div>
+    <div><label for="rezerwa">Rezerwa awaryjna magazynu (%)
+      <span class="hint">Ile pojemności stoi zaparkowane na wypadek awarii.</span></label>
+      <input type="number" id="rezerwa" value="20" min="0" max="50" step="5"></div>
+    <div><label for="dobieranie">Dobieranie magazynu z sieci nocą
+      <span class="hint">Wymaga skonfigurowania falownika.</span></label>
+      <select id="dobieranie"><option value="1" selected>Tak</option><option value="0">Nie</option></select></div>
+    <div><label for="podatnicy">Liczba podatników (limit ulgi)
+      <span class="hint">Małżonkowie współwłaściciele mają po własnym limicie 53 000 zł.</span></label>
+      <input type="number" id="podatnicy" value="1" min="1" max="2" step="1"></div>
+  </div>
+</details>
+
+<section>
+  <h2><span class="n">5</span>Zasilanie awaryjne: czego oferta nie mówi</h2>
+  <p class="lead">Pozycja „zasilanie awaryjne + 2 900 zł" nie znaczy, że przy braku prądu dom
+  działa normalnie. Nie działa.</p>
+  <div class="callout warn">
+    <p><b>Deklarowana moc awaryjna nie jest dostępna na jednej fazie.</b> Falownik z domu
+    odniesienia ma w karcie katalogowej wyjście awaryjne 8 000 W - ale trójfazowo, po 13 A
+    na fazę. Jednofazowy odbiornik dostanie z tego około 3 kW, a nie 8.</p>
+    <p><b>Obwód awaryjny ma własne zabezpieczenie.</b> W praktyce pobór urywa się tam przy
+    ok. 3,6 kW, co odpowiada bezpiecznikowi 16 A. To ograniczenie rozdzielnicy, nie sprzętu
+    za kilkadziesiąt tysięcy.</p>
+    <p><b>Magazyn nie odda całej pojemności.</b> Rezerwa awaryjna to u sąsiada realnie 20%
+    pojemności, która nigdy nie pracuje na autokonsumpcję. Kalkulator to uwzględnia.</p>
+    <p>Pytanie do instalatora brzmi więc: <b>ile kW dostanę na jednej fazie i jakie
+    zabezpieczenie ma obwód awaryjny</b> - a nie „czy jest zasilanie awaryjne".</p>
+  </div>
+  <div class="panel">
+    <div class="grid">
+      <div><label for="mocAwaria">Moc, którą chcesz utrzymać przy awarii (kW)</label>
+        <input type="number" id="mocAwaria" value="2" min="0.2" max="10" step="0.2"></div>
+      <div><label for="limitEps">Limit obwodu awaryjnego (kW)
+        <span class="hint">Z karty katalogowej albo od instalatora.</span></label>
+        <input type="number" id="limitEps" value="3.6" min="0.5" max="20" step="0.1"></div>
+    </div>
+    <div class="callout" id="epsWynik" style="margin-bottom:0"></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">6</span>Zanim podpiszesz umowę</h2>
+  <p class="lead">Tego kalkulator nie policzy, a decyduje o tym, czy dobrze wydasz pieniądze.</p>
+  <ul>
+    <li><b>Rozpiętość cen za podobny dom sięgała 25 tysięcy złotych.</b> Zbierz kilka ofert,
+    nie jedną.</li>
+    <li><b>Pojemność „użytkowa" bywa istotnie niższa od nominalnej.</b> W jednej z zebranych
+    ofert: 9,8 kWh nominalnie, 7,71 kWh funkcjonalnie - czyli 79%. W innej 93%. Porównując
+    po nominale, porównujesz dwie różne rzeczy.</li>
+    <li><b>Zasilanie awaryjne to osobna pozycja</b> rzędu 3-4 tysięcy złotych.</li>
+    <li><b>Zapytaj, jaką autokonsumpcję i jaką cenę sprzedaży przyjęto</b> do wyliczenia
+    opłacalności w ofercie. To dwie liczby, którymi najłatwiej podkolorować wynik.</li>
+  </ul>
+  <p>Listę kontrolną do porównywania ofert i rzetelne omówienie taryf ma
+  <a href="https://akademia-fotowoltaiki.pl" target="_blank" rel="noopener">Akademia
+  Fotowoltaiki</a> - właściciel domu odniesienia korzystał z niej przy swojej decyzji,
+  a ich zestawienie stawek PGE sprawdziliśmy wobec oficjalnych dokumentów i się zgadzało.</p>
+</section>
+
+<section>
+  <h2><span class="n">7</span>Skąd te liczby</h2>
+  <div class="callout">
+    <p><b>Twoje dane nigdzie nie są wysyłane.</b> Cały kalkulator liczy w Twojej przeglądarce.
+    Nie ma serwera, nie ma bazy, nie ma analityki. Parametry zapisujemy w adresie po znaku
+    „#", który nigdy nie trafia do serwera - możesz taki link zapisać albo komuś wysłać.
+    Samo wejście na stronę zostawia oczywiście adres IP w logach hostingu, jak na każdej
+    stronie w internecie.</p>
+  </div>
+  <p>Profil pochodzi z <b>jednego konkretnego domu</b>: 125 m², drewniany szkieletowy,
+  w pełni elektryczny, ogrzewany dwiema pompami ciepła powietrze-powietrze, PV 9 kWp
+  i magazyn 15 kWh. Rok pomiarów od sierpnia 2025 do lipca 2026, próbkowanie co 5 minut,
+  pokrycie 99,3%.</p>
+  <p><b>Co w tych danych poprawiono i dlaczego.</b> Od października 2025 do 24 stycznia 2026
+  falownik wyłączał się z powodu spadków napięcia w sieci (to przedmiot odrębnego sporu
+  z operatorem). W tym czasie nie mierzył ani produkcji, ani poboru domu. Produkcję w tych
+  miesiącach podniesiono do poziomu typowego roku, a zużycie o energię, którą widział licznik
+  operatora, a logger nie. Kształt dobowy pozostał zmierzony, skorygowano tylko sumy
+  miesięczne.</p>
+  <p><b>Czego kalkulator nie wie.</b> Że Twój dom to nie ten dom. Jeśli grzejesz inaczej niż
+  pompą ciepła, rozkład zużycia w roku będzie inny i wynik przestanie być wiarygodny.
+  Model sprawdzono na zmierzonym roku: odtwarza pobór z sieci z dokładnością do 1%,
+  oddanie do sieci do 5%, a rozkład poboru między strefy taryfowe do 1,3 punktu
+  procentowego. To nie znaczy, że przewidzi Twój rok z taką dokładnością - znaczy, że nie
+  zmyśla.</p>
+  <div class="btnrow noprint">
+    <button class="akcja" id="btnPdf">Zapisz jako PDF</button>
+    <button class="akcja" id="btnHtml">Pobierz wynik jako plik</button>
+    <button class="akcja" id="btnLink">Skopiuj link z moimi liczbami</button>
+  </div>
+</section>
+
+<footer>
+  Kalkulator powstał dla sąsiadów z osiedla w Musułach. Stawki: Taryfa PGE Obrót dla grup G
+  zatwierdzona przez Prezesa URE na 2026 oraz Wyciąg z Taryfy PGE Dystrybucja od 1.02.2026.
+  Ceny giełdowe: API PSE. Wynik jest szacunkiem, nie ofertą ani poradą finansową.
+</footer>
+
+</div>
+<script src="src/chart.umd.min.js"></script>
+<script type="module" src="src/ui.js"></script>
+</body>
+</html>
