@@ -126,20 +126,37 @@ export function oplatyStaleNetto(grupa, zuzycieRoczneKWh) {
 }
 
 /**
+ * Wspolczynnik, o ktory powieksza sie wartosc depozytu prosumenckiego przed
+ * przypisaniem do konta (art. 4c ustawy o OZE, przepis obowiazuje od 1.02.2025).
+ * Odpowiada stawce VAT: prosument oddaje energie po cenie netto, a kupuje po brutto,
+ * wiec bez tego wspolczynnika depozyt nie pokrywalby rownowaznej ilosci energii.
+ */
+export const WSPOLCZYNNIK_DEPOZYTU = 1.23;
+
+/**
  * Net-billing: wartosc energii oddanej do sieci trafia na depozyt prosumencki,
  * ktorym mozna oplacic energie kupiona (ale juz nie dystrybucje).
  *
- * DO POTWIERDZENIA W ZRODLE przed publikacja: rozliczenie godzinowe wg RCE dotyczy
- * instalacji uruchomionych od 1.07.2024; ceny ujemne liczone jako zero; niewykorzystana
- * nadwyzka zwracana po 12 miesiacach w ograniczonej czesci. Punkt kontrolny liczbowy:
- * u Tomasza 2 237 kWh eksportu dalo ok. 479 zl zasilenia depozytu.
+ * ZWERYFIKOWANE 11.08.2026:
+ *  - rozliczenie godzinowe wg RCE obowiazuje instalacje przylaczone od 1.07.2024
+ *    i nie ma z niego powrotu do miesiecznego RCEm,
+ *  - przy ujemnej cenie RCE depozyt sie NIE ZMNIEJSZA (stad ograniczenie do zera),
+ *  - wartosc depozytu za dany miesiac jest powiekszana o wspolczynnik 1,23
+ *    i przypisywana do konta w miesiacu nastepnym,
+ *  - srodki mozna rozliczac przez 12 miesiecy; niewykorzystana nadwyzka jest
+ *    zwracana do 20% wartosci depozytu z danego miesiaca.
+ *
+ * Punkt kontrolny: u domu odniesienia 2 237 kWh eksportu dalo ok. 479 zl na koncie -
+ * i to jest kwota JUZ po pomnozeniu przez 1,23 (wartosc rynkowa netto to ok. 389 zl).
+ *
+ * @returns {number} kwota przypisana do konta prosumenta (po wspolczynniku)
  */
 export function depozytProsumencki(eksp, rce) {
   let wartosc = 0;
   for (let h = 0; h < eksp.length; h++) {
     if (eksp[h] > 0) wartosc += eksp[h] * Math.max(rce[h], 0) / 1000;
   }
-  return wartosc;
+  return wartosc * WSPOLCZYNNIK_DEPOZYTU;
 }
 
 /**

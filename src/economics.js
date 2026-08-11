@@ -23,9 +23,12 @@ export const CENNIK_ODNIESIENIA = {
 export const WIDELKI_OFERT_2025 = { min: 43446, max: 68273, mediana: 55208 };
 
 /**
- * Stan programow wsparcia na sierpien 2026. DO ZWERYFIKOWANIA przed publikacja -
- * to obszar, ktory zmienia sie w trakcie roku, a od niego zalezy glowny wynik.
+ * Stan programow wsparcia. ZWERYFIKOWANY 11.08.2026 na przydomowemagazyny.gov.pl,
+ * mojprad.gov.pl i gov.pl. Obszar zmienia sie w trakcie roku - date weryfikacji
+ * trzymamy przy danych, zeby bylo widac, jak swieze sa.
  */
+export const DOTACJE_SPRAWDZONE = '2026-08-11';
+
 export const DOTACJE = {
   mojPrad6: {
     nazwa: 'Mój Prąd 6.0',
@@ -33,23 +36,45 @@ export const DOTACJE = {
     info: 'Nabór zakończony 12.09.2025 - wyczerpała się pula środków. '
       + 'Właściciel domu odniesienia zdążył: dostał 17 000 zł na PV i 6 000 zł na magazyn.',
   },
-  magazynyKPO: {
-    nazwa: 'Dofinansowanie przydomowych magazynów energii (KPO)',
-    aktywny: true,
-    info: 'Nabór ruszył 30.03.2026 (mojprad.gov.pl). Dotyczy MAGAZYNU, nie samej fotowoltaiki. '
-      + 'Kwoty i warunki trzeba sprawdzić przed złożeniem wniosku - pula bywa wyczerpywana.',
-    domyslnaKwota: 0,
+  pme1: {
+    nazwa: 'Przydomowe Magazyny Energii, część 1 (KPO)',
+    aktywny: false,
+    info: 'Nabór trwał od 30.03 do 19.06.2026 i jest zamknięty. Był to zwrot kosztów '
+      + 'instalacji JUŻ WYKONANYCH (wydatki od 1.08.2024 do 31.10.2025, przyłączenie '
+      + 'do 31.10.2025), do 28 000 zł i do 50% kosztów. Dla decyzji podejmowanej dziś '
+      + 'nie ma znaczenia.',
+  },
+  pme2: {
+    nazwa: 'Przydomowe Magazyny Energii, część 2 (Fundusz Modernizacyjny)',
+    aktywny: false,
+    planowany: true,
+    info: 'Nabór planowany na III kwartał 2026, budżet do 1 mld zł. Warunki znane '
+      + 'z zapowiedzi: przedsięwzięcie rozpoczęte nie wcześniej niż 1.11.2025, '
+      + 'minimalna pojemność magazynu 10 kWh. Wnioski przez Generator (GWD). '
+      + 'To jedyna realna ścieżka dofinansowania magazynu dla kogoś, kto instaluje teraz - '
+      + 'ale dopóki nabór nie ruszy, w kalkulatorze zostawiamy dotację na zero.',
+    minimalnaPojemnoscKWh: 10,
   },
 };
 
 /**
- * Ulga termomodernizacyjna (art. 26h ustawy o PIT).
+ * Ulga termomodernizacyjna (art. 26h ustawy o PIT). ZWERYFIKOWANA 11.08.2026.
  *
  * To ODLICZENIE OD DOCHODU, a nie zwrot wydatku - przy zerowym podatku jest warta zero.
- * Warunek: budynek musi juz istniec i byc oddany do uzytku (nie w budowie); progu wieku
- * budynku nie ma. Limit 53 000 zl na podatnika; malzonkowie wspolwlasciciele maja po
- * wlasnym limicie. Z odliczenia wypada czesc pokryta dotacja - nie mozna rozliczyc
- * tej samej zlotowki dwa razy.
+ *
+ * Warunki potwierdzone:
+ *  - wlasciciel lub wspolwlasciciel budynku mieszkalnego JEDNORODZINNEGO,
+ *  - budynek musi byc oddany do uzytku; ulga NIE obejmuje budynku w budowie.
+ *    Progu wieku budynku nie ma - liczy sie tylko to, czy jest oddany,
+ *  - limit 53 000 zl na podatnika, malzonkowie wspolwlasciciele lacznie do 106 000 zl,
+ *  - przedsiewziecie ukonczone w ciagu 3 lat od konca roku pierwszego wydatku,
+ *  - wydatki udokumentowane fakturami VAT,
+ *  - odliczyc mozna WYLACZNIE czesc pokryta z wlasnych srodkow - kwota sfinansowana
+ *    dotacja z odliczenia wypada.
+ *
+ * WAZNE I KORZYSTNE: od poczatku 2025 katalog wydatkow obejmuje takze MAGAZYNY ENERGII
+ * i magazyny ciepla, nie tylko sama fotowoltaike. Dla decyzji o magazynie ma to
+ * znaczenie tym wieksze, ze dotacji na magazyn obecnie nie ma.
  */
 export const ULGA = {
   limitNaPodatnika: 53000,

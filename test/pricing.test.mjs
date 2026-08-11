@@ -57,7 +57,10 @@ test('depozyt prosumencki odtwarza realne zasilenie z faktur', () => {
     poborAutaKWh: profile.meta.pobor_auta_kWh,
   }, profile);
   const d = depozytProsumencki(r.eksp, rce);
-  // Realnie: 2 237 kWh eksportu dalo ok. 479 zl zasilenia depozytu (README repo zrodlowego).
+  // Realnie: 2 237 kWh eksportu dalo ok. 479 zl na koncie prosumenta (README repo
+  // zrodlowego). To kwota JUZ po ustawowym wspolczynniku 1,23 - wartosc rynkowa netto
+  // tej energii to ok. 389 zl. Funkcja zwraca kwote przypisana do konta, wiec porownujemy
+  // wprost z 479 zl.
   const odchylka = (100 * (d - 479)) / 479;
   console.log(`\n  depozyt: ${d.toFixed(0)} zl przy ${r.eksportKWh.toFixed(0)} kWh eksportu` +
     `  (realnie 479 zl przy 2 237 kWh, odchylka ${odchylka.toFixed(0)}%)\n`);

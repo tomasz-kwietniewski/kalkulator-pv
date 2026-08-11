@@ -41,11 +41,16 @@ export const DOMYSLNE = {
   // rozkladu importu miedzy strefy) oraz ze to gorsza sprawnosc round-trip (psulaby
   // trafiony eksport). Wlasciwe wyjasnienie to dobieranie magazynu z sieci - patrz nizej.
   poborWlasnyW: 20,
-  // Dobieranie magazynu z sieci w taniej strefie. Falowniki hybrydowe maja te funkcje
-  // i przy taryfie strefowej jest ona oplacalna: kupujesz tanio noca, oddajesz domowi
-  // w drogich godzinach. U Tomasza widac ja w danych - zuzycie domu przypada na tania
-  // strefe w 54%, produkcja PV w 37%, a zmierzony import az w 77,5%. Takiej przewagi
-  // nie da sie uzyskac samym magazynowaniem PV.
+  // Dobieranie magazynu z sieci w taniej strefie: kupujesz tanio noca, oddajesz domowi
+  // w drogich godzinach. W falownikach Sofar HYD odpowiada za to tryb "Time of Use".
+  //
+  // Najpierw wywnioskowane z danych: zuzycie domu przypada na tania strefe w 54%,
+  // produkcja PV w 37%, a zmierzony import az w 77,5% - takiej przewagi nie da sie
+  // uzyskac samym magazynowaniem PV. Potem POTWIERDZONE w dokumentacji instalacji
+  // domu odniesienia: falownik jest ustawiony na Time of Use na stale.
+  //
+  // Sam harmonogram (godziny i docelowy poziom naladowania) nie jest udokumentowany,
+  // wiec docelowyPoziomZSieci pozostaje parametrem skalibrowanym na zmierzonym roku.
   // Domyslnie WLACZONE dla taryf strefowych, bo tylko z ta funkcja model odtwarza
   // zmierzony rozklad importu (76% w taniej strefie wobec 77,5% realnie; bez niej
   // wychodzi 63%, co zawyzaloby rachunek o ok. 390 zl rocznie). Wymaga jednak

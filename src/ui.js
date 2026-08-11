@@ -202,12 +202,20 @@ function rysujTaryfy(p, pelny) {
 
 function rysujDotacje(p, pelny) {
   const ulga = pelny.ulga;
+  const zaMaly = p.magazynKWh > 0 && p.magazynKWh < DOTACJE.pme2.minimalnaPojemnoscKWh;
   $('dotacjeInfo').innerHTML = `<p><b>${DOTACJE.mojPrad6.nazwa}:</b> ${DOTACJE.mojPrad6.info}</p>
-    <p><b>${DOTACJE.magazynyKPO.nazwa}:</b> ${DOTACJE.magazynyKPO.info}</p>
+    <p><b>${DOTACJE.pme1.nazwa}:</b> ${DOTACJE.pme1.info}</p>
+    <p><b>${DOTACJE.pme2.nazwa}:</b> ${DOTACJE.pme2.info}
+      ${zaMaly ? `<br><b>Uwaga:</b> Twój magazyn ${p.magazynKWh} kWh jest mniejszy niż zapowiadane
+      minimum ${DOTACJE.pme2.minimalnaPojemnoscKWh} kWh - przy takiej pojemności dofinansowanie
+      z tego programu nie przysługiwałoby.` : ''}</p>
     <p><b>Ulga termomodernizacyjna:</b> ${ulga > 0
       ? `przy tym koszcie i Twoim sposobie rozliczenia PIT odzyskasz ok. <b>${zl(ulga)}</b>. `
-        + 'Warunek: budynek musi być już oddany do użytku. Dotacji i ulgi nie da się '
-        + 'rozliczyć z tej samej złotówki - podstawę pomniejszamy o dotację.'
+        + 'Warunek: budynek musi być już oddany do użytku (progu wieku nie ma, ale dom '
+        + 'w budowie się nie kwalifikuje). Limit 53 000 zł na podatnika, małżonkowie '
+        + 'współwłaściciele mają po własnym. Od 2025 katalog obejmuje także magazyny '
+        + 'energii, nie tylko panele. Dotacji i ulgi nie da się rozliczyć z tej samej '
+        + 'złotówki - podstawę pomniejszamy o dotację.'
       : 'nie uwzględniamy jej w wyniku. Odliczenie od dochodu przy zerowym podatku jest warte zero.'}</p>`;
 }
 

@@ -61,6 +61,27 @@ Profile generuje skrypt `analyze/kalkulator/build_profiles.py` w prywatnym repoz
 z danymi źródłowymi. Do tego repozytorium trafia wyłącznie gotowy, anonimowy artefakt -
 bez adresu, numerów PPE, kwot faktur i numerów seryjnych.
 
+## Stan przepisów i programów (zweryfikowany 11.08.2026)
+
+- **Mój Prąd 6.0** - zamknięty 12.09.2025, wyczerpana pula.
+- **Przydomowe Magazyny Energii cz. 1 (KPO)** - nabór 30.03 - 19.06.2026, zamknięty.
+  Był zwrotem kosztów instalacji **już wykonanych** (wydatki 1.08.2024 - 31.10.2025),
+  do 28 000 zł i do 50% kosztów. Dla decyzji podejmowanej dziś bez znaczenia.
+- **Przydomowe Magazyny Energii cz. 2 (Fundusz Modernizacyjny)** - planowany na
+  III kwartał 2026, budżet do 1 mld zł, zapowiadane minimum **10 kWh** pojemności
+  magazynu i rozpoczęcie przedsięwzięcia nie wcześniej niż 1.11.2025. Jeszcze nie ruszył,
+  więc dotacja w kalkulatorze startuje od zera.
+- **Ulga termomodernizacyjna** (art. 26h ustawy o PIT) - limit 53 000 zł na podatnika,
+  małżonkowie współwłaściciele łącznie 106 000 zł. Budynek musi być oddany do użytku
+  (progu wieku nie ma, dom w budowie się nie kwalifikuje). Od 2025 katalog obejmuje
+  także **magazyny energii i magazyny ciepła**, nie tylko panele. Odliczyć można
+  wyłącznie część pokrytą z własnych środków.
+- **Net-billing** - instalacje przyłączone od 1.07.2024 rozliczane godzinowym RCE,
+  bez powrotu do miesięcznego RCEm. Przy ujemnej cenie depozyt się nie zmniejsza.
+  Wartość depozytu za dany miesiąc jest **powiększana o współczynnik 1,23** i przypisywana
+  do konta w miesiącu następnym (przepis od 1.02.2025). Środki można rozliczać przez
+  12 miesięcy, niewykorzystana nadwyżka wraca do 20% wartości depozytu miesięcznego.
+
 ## Źródła stawek
 
 - Taryfa PGE Obrót dla grup taryfowych G, zatwierdzona przez Prezesa URE na 2026 r.
