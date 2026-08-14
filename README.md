@@ -110,9 +110,15 @@ bez adresu, numerów PPE, kwot faktur i numerów seryjnych.
   Warto wiedzieć, co z tych limitów wynika: przy realnych cenach magazynu (ok. 1 100 zł/kWh)
   **zawsze wiąże 30% kosztu**, nigdy 800 zł/kWh ani 16 000 zł. Żeby wyjąć pełne 16 000 zł,
   faktura musiałaby pokazać magazyn za ponad 53 000 zł, czyli **około dwuipółkrotność ceny
-  sprzętu** - i mieściłoby się to w limicie 3 000 zł/kWh. Program premiuje więc drogie
-  pozycje na fakturze, a nie tanie zakupy, i dlatego kalkulator pokazuje obok dotacji
-  cenę magazynu za kWh oraz cenę tego samego sprzętu w sklepie producenta.
+  sprzętu** - i mieściłoby się to w limicie 3 000 zł/kWh.
+
+  Kluczowe jest jednak co innego: **wysokość dotacji zależy od rozpisania pozycji, a nie
+  od tego, ile klient płaci**. Wykonawca może wycenić niżej fotowoltaikę z falownikiem,
+  a wyżej magazyn, i przy tej samej kwocie łącznej dotacja wyjdzie większa. Dokładnie to
+  widać na fakturze za instalację odniesienia: oferta podawała 50 000 zł, faktura rozpisała
+  16 750 zł na PV z montażem i 32 750 zł na magazyn. Dlatego kalkulator radzi
+  **porównywać oferty po kwocie łącznej**, a cenę magazynu za kWh podaje obok jako
+  punkt odniesienia, nie jako kryterium wyboru.
 - **Ulga termomodernizacyjna** (art. 26h ustawy o PIT) - limit 53 000 zł na podatnika,
   małżonkowie współwłaściciele łącznie 106 000 zł. Budynek musi być oddany do użytku
   (progu wieku nie ma, dom w budowie się nie kwalifikuje). Od 2025 katalog obejmuje

@@ -491,14 +491,19 @@ function rysujPme2(p, pozycje) {
       w pole obok</span>
     </div>
     <div class="ostrzezenie">
-      <b>Uwaga na to, jak ten program działa.</b> Dotacja to procent kosztu, więc
-      <b>im drożej magazyn wyceniono na fakturze, tym większa dopłata</b> - aż do granicy
-      ${zl(PME2.maksKosztZaKWh)} za kWh. U Ciebie magazyn wychodzi
-      <b>${zl(zaKWh)} za kWh</b>, a sam sprzęt tej pojemności kosztuje w sklepie producenta
-      ${zl(sklep.kwota)} (${sklep.modulow} ${sklep.modulow === 1 ? 'moduł' : 'moduły'}
-      po 5,12 kWh, razem ${liczba(sklep.pojemnoscRzeczywista)} kWh).
-      Oferta z wysoko wycenionym magazynem da większą dotację, ale <b>nie jest przez to
-      dla Ciebie tańsza</b> - porównuj cenę za kWh, nie wysokość dopłaty.
+      <b>Uwaga na to, jak ten program działa.</b> Dotacja to procent kosztu magazynu,
+      więc jej wysokość zależy od tego, <b>jak wykonawca rozpisze pozycje na fakturze</b>,
+      a nie od tego, ile naprawdę zapłacisz. Ta sama instalacja za tę samą kwotę łączną
+      potrafi dać zupełnie różną dotację, zależnie od tego, ile z niej przypisano
+      magazynowi - a przypisać można aż do ${zl(PME2.maksKosztZaKWh)} za kWh.
+      U Ciebie magazyn wychodzi <b>${zl(zaKWh)} za kWh</b>, a sam sprzęt tej pojemności
+      kosztuje w sklepie producenta ${zl(sklep.kwota)}
+      (${sklep.modulow} ${sklep.modulow === 1 ? 'moduł' : 'moduły'} po 5,12 kWh,
+      razem ${liczba(sklep.pojemnoscRzeczywista)} kWh).
+      <p style="margin:8px 0 0">Praktycznie: <b>porównuj oferty po kwocie łącznej</b>,
+      bo tylko ją realnie płacisz. Wysoko wyceniony magazyn nie znaczy, że przepłacasz,
+      ale też nie znaczy, że dostajesz więcej sprzętu. A wniosek o dotację składasz Ty
+      i to Ty podpisujesz się pod tym, co jest na fakturze.</p>
     </div>`;
 }
 
