@@ -100,9 +100,19 @@ bez adresu, numerów PPE, kwot faktur i numerów seryjnych.
   Był zwrotem kosztów instalacji **już wykonanych** (wydatki 1.08.2024 - 31.10.2025),
   do 28 000 zł i do 50% kosztów. Dla decyzji podejmowanej dziś bez znaczenia.
 - **Przydomowe Magazyny Energii cz. 2 (Fundusz Modernizacyjny)** - planowany na
-  III kwartał 2026, budżet do 1 mld zł, zapowiadane minimum **10 kWh** pojemności
-  magazynu i rozpoczęcie przedsięwzięcia nie wcześniej niż 1.11.2025. Jeszcze nie ruszył,
-  więc dotacja w kalkulatorze startuje od zera.
+  III kwartał 2026, budżet do 1 mld zł. Dotacja na magazyn to **30% kosztów, nie więcej
+  niż 800 zł/kWh i nie więcej niż 16 000 zł** przy net-billingu (8 000 zł przy starych
+  opustach). Minimum **10 kWh**, koszt zakupu z montażem do 3 000 zł/kWh, rozpoczęcie
+  przedsięwzięcia nie wcześniej niż 1.11.2025. Osobno do 2 000 zł na sprzęt z Unii.
+  Kalkulator **pokazuje szacunek, ale nie wlicza go w wynik** - nabór nie ruszył
+  i regulaminu jeszcze nie ma.
+
+  Warto wiedzieć, co z tych limitów wynika: przy realnych cenach magazynu (ok. 1 100 zł/kWh)
+  **zawsze wiąże 30% kosztu**, nigdy 800 zł/kWh ani 16 000 zł. Żeby wyjąć pełne 16 000 zł,
+  faktura musiałaby pokazać magazyn za ponad 53 000 zł, czyli **około dwuipółkrotność ceny
+  sprzętu** - i mieściłoby się to w limicie 3 000 zł/kWh. Program premiuje więc drogie
+  pozycje na fakturze, a nie tanie zakupy, i dlatego kalkulator pokazuje obok dotacji
+  cenę magazynu za kWh oraz cenę tego samego sprzętu w sklepie producenta.
 - **Ulga termomodernizacyjna** (art. 26h ustawy o PIT) - limit 53 000 zł na podatnika,
   małżonkowie współwłaściciele łącznie 106 000 zł. Budynek musi być oddany do użytku
   (progu wieku nie ma, dom w budowie się nie kwalifikuje). Od 2025 katalog obejmuje

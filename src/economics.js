@@ -99,14 +99,93 @@ export const DOTACJE = {
     nazwa: 'Przydomowe Magazyny Energii, część 2 (Fundusz Modernizacyjny)',
     aktywny: false,
     planowany: true,
-    info: 'Nabór planowany na III kwartał 2026, budżet do 1 mld zł. Warunki znane '
-      + 'z zapowiedzi: przedsięwzięcie rozpoczęte nie wcześniej niż 1.11.2025, '
-      + 'minimalna pojemność magazynu 10 kWh. Wnioski przez Generator (GWD). '
-      + 'To jedyna realna ścieżka dofinansowania magazynu dla kogoś, kto instaluje teraz - '
-      + 'ale dopóki nabór nie ruszy, w kalkulatorze zostawiamy dotację na zero.',
+    info: 'Nabór planowany na III kwartał 2026, budżet do 1 mld zł. Dotacja na magazyn '
+      + 'to 30% kosztów kwalifikowanych, nie więcej niż 800 zł za kWh pojemności i nie '
+      + 'więcej niż 16 000 zł przy net-billingu (8 000 zł przy starych opustach). '
+      + 'Minimalna pojemność 10 kWh, koszt zakupu z montażem nie może przekroczyć '
+      + '3 000 zł za kWh, a przedsięwzięcie musi być rozpoczęte nie wcześniej niż '
+      + '1.11.2025. Osobno do 2 000 zł na baterie albo falownik hybrydowy wyprodukowany '
+      + 'w Unii. Wnioski przez Generator (GWD). To jedyna realna ścieżka dofinansowania '
+      + 'magazynu dla kogoś, kto instaluje teraz - ale dopóki nabór nie ruszy, '
+      + 'w kalkulatorze dotacja zostaje na zero.',
     minimalnaPojemnoscKWh: 10,
   },
 };
+
+/**
+ * Warunki PME 2. ZWERYFIKOWANE 14.08.2026 na przydomowemagazyny.gov.pl/o-programie.
+ * Regulamin naboru jeszcze nie zostal opublikowany, wiec to sa zapowiedzi, nie przepis.
+ */
+export const PME2 = {
+  minimalnaPojemnoscKWh: 10,
+  udzialKosztow: 0.30,
+  zlZaKWh: 800,
+  maksNetBilling: 16000,
+  maksNetMetering: 8000,
+  // Powyzej tej ceny koszt przestaje byc kwalifikowany. Prog jest ustawiony wysoko:
+  // realny magazyn kosztuje ok. 1 100 zl/kWh, wiec miesci sie w nim niemal trzykrotnie.
+  maksKosztZaKWh: 3000,
+  dodatekSprzetUE: 2000,
+};
+
+/**
+ * Szacunek dotacji z PME 2 wraz z informacja, KTORA regula ja ograniczyla.
+ *
+ * Ta druga czesc jest wazniejsza od samej kwoty. Komunikaty o programie mowia
+ * "do 16 000 zl na magazyn", ale przy realnych cenach sprzetu wiaze zawsze 30% kosztu:
+ * zeby limit 800 zl/kWh zaczal cokolwiek znaczyc, magazyn musialby kosztowac ponad
+ * 2 667 zl/kWh, czyli okolo dwuipolkrotnosc ceny sklepowej. Uzytkownik, ktory to widzi,
+ * nie bedzie szukal drozszej oferty w nadziei na wyzsza dotacje.
+ */
+export function dotacjaPME2({ pojemnoscKWh, kosztMagazynu, netBilling = true }) {
+  const gorny = netBilling ? PME2.maksNetBilling : PME2.maksNetMetering;
+  if (!(pojemnoscKWh >= PME2.minimalnaPojemnoscKWh) || !(kosztMagazynu > 0)) {
+    return { kwota: 0, wiaze: 'zaMalyMagazyn', kosztKwalifikowany: 0, gorny };
+  }
+  // Koszt ponad 3 000 zl/kWh w ogole nie wchodzi do podstawy.
+  const kosztKwalifikowany = Math.min(kosztMagazynu, pojemnoscKWh * PME2.maksKosztZaKWh);
+  const limity = [
+    { wiaze: 'udzialKosztow', kwota: PME2.udzialKosztow * kosztKwalifikowany },
+    { wiaze: 'zlZaKWh', kwota: PME2.zlZaKWh * pojemnoscKWh },
+    { wiaze: 'gornyLimit', kwota: gorny },
+  ];
+  const najnizszy = limity.reduce((a, b) => (b.kwota < a.kwota ? b : a));
+  return {
+    kwota: Math.round(najnizszy.kwota),
+    wiaze: najnizszy.wiaze,
+    kosztKwalifikowany: Math.round(kosztKwalifikowany),
+    gorny,
+  };
+}
+
+/**
+ * Ceny katalogowe magazynu Sofar ze sklepu producenta, brutto, sprawdzone 14.08.2026.
+ * Sluza wylacznie za punkt odniesienia: ile ten sprzet kosztuje bez montazu i marzy.
+ */
+export const SKLEP_SOFAR = {
+  sprawdzone: '2026-08-14',
+  jednostkaSterujaca: 1299,   // BTS 5K-BDU
+  modul: 5299,                // BTS 5K
+  pojemnoscModulu: 5.12,
+  modulowNaKolumne: 4,        // do 20,48 kWh na jednej jednostce sterujacej
+};
+
+/**
+ * Cena sprzetu dla magazynu danej pojemnosci - liczona SKOKOWO, bo moduly wchodza
+ * po 5,12 kWh. Przy suwaku na 13 kWh i tak kupuje sie trzy moduly, czyli 15,36 kWh.
+ * Kalkulator liczy koszt liniowo (bo oferty tak wyceniaja), ale porownanie z cena
+ * sklepowa musi uwzgledniac, ze polowy modulu nie da sie kupic.
+ */
+export function cenaSklepowaMagazynu(pojemnoscKWh) {
+  if (!(pojemnoscKWh > 0)) return { kwota: 0, modulow: 0, pojemnoscRzeczywista: 0 };
+  const modulow = Math.ceil(pojemnoscKWh / SKLEP_SOFAR.pojemnoscModulu);
+  const kolumn = Math.ceil(modulow / SKLEP_SOFAR.modulowNaKolumne);
+  return {
+    kwota: kolumn * SKLEP_SOFAR.jednostkaSterujaca + modulow * SKLEP_SOFAR.modul,
+    modulow,
+    pojemnoscRzeczywista: +(modulow * SKLEP_SOFAR.pojemnoscModulu).toFixed(2),
+  };
+}
 
 /**
  * Ulga termomodernizacyjna (art. 26h ustawy o PIT). ZWERYFIKOWANA 11.08.2026.

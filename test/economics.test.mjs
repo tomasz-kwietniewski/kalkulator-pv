@@ -13,7 +13,7 @@ import { symuluj, krzywaMagazynu } from '../src/engine.js';
 import {
   CENNIK_ODNIESIENIA, POZYCJE_KOSZTU, pozycjeZCennika, sumaPozycji, rozdzielKwote,
   kosztInstalacji, ulgaTermomodernizacyjna, kaskadaNakladu, zwrot, zwrotDwutorowo,
-  ULGA, WIDELKI_OFERT_2025, WIDELKI_EPS,
+  ULGA, WIDELKI_OFERT_2025, WIDELKI_EPS, PME2, dotacjaPME2, cenaSklepowaMagazynu,
 } from '../src/economics.js';
 
 const profile = JSON.parse(readFileSync(new URL('./profiles_raw.json', import.meta.url)));
@@ -225,4 +225,78 @@ test('magazyn zmniejsza eksport, ale nie zmienia produkcji', () => {
   assert.ok(Math.abs(bez.produkcja - z.produkcja) < 1, 'magazyn nie moze zmieniac produkcji PV');
   assert.ok(z.eksportKWh < bez.eksportKWh);
   assert.ok(z.importKWh < bez.importKWh);
+});
+
+/* --- dotacja PME 2 ------------------------------------------------------------- */
+
+test('przy realnych cenach magazynu wiaze 30% kosztu, a nie limit 800 zl/kWh', () => {
+  // Cennik kalkulatora: magazyn 15 kWh to 2 000 + 15 x 1 100 = 18 500 zl.
+  const koszt = pozycjeZCennika({ kWp: 9, magazynKWh: 15 }).magazyn;
+  const d = dotacjaPME2({ pojemnoscKWh: 15, kosztMagazynu: koszt });
+  assert.equal(d.wiaze, 'udzialKosztow');
+  assert.equal(d.kwota, Math.round(0.3 * koszt));
+  // Limit pojemnosciowy bylby dwa razy wyzszy - i to jest sedno sprawy.
+  assert.ok(d.kwota < PME2.zlZaKWh * 15);
+  console.log(`\n  magazyn 15 kWh za ${koszt} zl -> dotacja ${d.kwota} zl (wiaze ${d.wiaze})`);
+});
+
+test('ponizej 10 kWh dotacja nie przysluguje', () => {
+  assert.equal(dotacjaPME2({ pojemnoscKWh: 9.9, kosztMagazynu: 30000 }).kwota, 0);
+  assert.equal(dotacjaPME2({ pojemnoscKWh: 9.9, kosztMagazynu: 30000 }).wiaze, 'zaMalyMagazyn');
+  assert.ok(dotacjaPME2({ pojemnoscKWh: 10, kosztMagazynu: 13000 }).kwota > 0);
+});
+
+/**
+ * Sedno konstrukcji programu: pelna dotacje da sie wyjac tylko przy fakturze
+ * wyraznie odbiegajacej od cen sprzetu. Ten test pilnuje, zebysmy tego nie zgubili,
+ * bo na tym stoi ostrzezenie pokazywane uzytkownikowi.
+ */
+test('pelne 16 000 zl wymaga faktury okolo dwuipolkrotnie wyzszej niz sklep', () => {
+  const pojemnosc = 20;
+  const sklep = cenaSklepowaMagazynu(pojemnosc);
+
+  // Uczciwa cena: wiaze 30%, do pelnej dotacji daleko.
+  const uczciwa = dotacjaPME2({ pojemnoscKWh: pojemnosc, kosztMagazynu: sklep.kwota });
+  assert.equal(uczciwa.wiaze, 'udzialKosztow');
+  assert.ok(uczciwa.kwota < PME2.maksNetBilling / 2);
+
+  // Zeby 30% dalo 16 000 zl, faktura musi pokazac ponad 53 tys.
+  const potrzebnaKwota = PME2.maksNetBilling / PME2.udzialKosztow;
+  const napompowana = dotacjaPME2({ pojemnoscKWh: pojemnosc, kosztMagazynu: potrzebnaKwota });
+  assert.equal(napompowana.kwota, PME2.maksNetBilling);
+  const krotnosc = potrzebnaKwota / sklep.kwota;
+  console.log(`  20 kWh: sklep ${sklep.kwota} zl -> dotacja ${uczciwa.kwota} zl; `
+    + `zeby wyjac ${PME2.maksNetBilling} zl faktura musi pokazac ${Math.round(potrzebnaKwota)} zl `
+    + `(x${krotnosc.toFixed(1)})`);
+  assert.ok(krotnosc > 2, `krotnosc ${krotnosc.toFixed(2)} - ostrzezenie na stronie straciloby sens`);
+
+  // I nadal miesci sie w limicie 3 000 zl/kWh, czyli regulamin na to pozwala.
+  assert.ok(potrzebnaKwota / pojemnosc < PME2.maksKosztZaKWh);
+});
+
+test('koszt ponad 3 000 zl za kWh nie wchodzi do podstawy', () => {
+  const d = dotacjaPME2({ pojemnoscKWh: 10, kosztMagazynu: 90000 });
+  assert.equal(d.kosztKwalifikowany, 30000);
+  // 30% z 30 000 to 9 000, ale limit pojemnosciowy 800 x 10 = 8 000 jest nizszy.
+  assert.equal(d.wiaze, 'zlZaKWh');
+  assert.equal(d.kwota, 8000);
+});
+
+test('stare opusty daja polowe gornego limitu', () => {
+  const duzy = { pojemnoscKWh: 40, kosztMagazynu: 200000 };
+  assert.equal(dotacjaPME2({ ...duzy, netBilling: true }).kwota, PME2.maksNetBilling);
+  assert.equal(dotacjaPME2({ ...duzy, netBilling: false }).kwota, PME2.maksNetMetering);
+});
+
+test('cena sklepowa magazynu liczy sie skokowo, po modulach', () => {
+  // Modul ma 5,12 kWh - przy 13 kWh i tak kupuje sie trzy sztuki.
+  const trzynascie = cenaSklepowaMagazynu(13);
+  const pietnascie = cenaSklepowaMagazynu(15.36);
+  assert.equal(trzynascie.modulow, 3);
+  assert.equal(trzynascie.kwota, pietnascie.kwota);
+  assert.equal(pietnascie.kwota, 1299 + 3 * 5299);
+  assert.equal(trzynascie.pojemnoscRzeczywista, 15.36);
+  // Powyzej 20,48 kWh potrzebna jest druga jednostka sterujaca.
+  assert.equal(cenaSklepowaMagazynu(25).kwota, 2 * 1299 + 5 * 5299);
+  assert.equal(cenaSklepowaMagazynu(0).kwota, 0);
 });

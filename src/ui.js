@@ -9,8 +9,8 @@ import { symuluj, krzywaMagazynu } from './engine.js';
 import { rachunekRoczny, DYNAMICZNA } from './pricing.js';
 import {
   pozycjeZCennika, sumaPozycji, rozdzielKwote, POZYCJE_KOSZTU,
-  kaskadaNakladu, zwrot, zwrotDwutorowo,
-  WIDELKI_OFERT_2025, WIDELKI_EPS, DOTACJE,
+  kaskadaNakladu, zwrot, zwrotDwutorowo, dotacjaPME2, cenaSklepowaMagazynu,
+  WIDELKI_OFERT_2025, WIDELKI_EPS, DOTACJE, PME2,
 } from './economics.js';
 import {
   rysujMiesiace, rysujZwrot, rysujNasycenie, kolumnaPrzeplywu,
@@ -181,6 +181,7 @@ function przelicz() {
   rysujMagazyn(p, warianty);
   rysujKaskade(p, wybrany);
   rysujHero(p, wybrany);
+  rysujPme2(p, pozycje);
   rysujDotacje(p, wybrany);
   rysujPasek(sumaPozycji(pozycje));
   rysujMiesiace($('wykresMies'), warianty[2].wynik.miesiace);
@@ -447,6 +448,60 @@ function rysujWykresZwrotu(w) {
   ]);
 }
 
+/**
+ * Szacunek dotacji z PME 2 - pokazany, ale NIE wliczony w wynik.
+ *
+ * Nabor nie ruszyl i regulaminu nie ma, wiec doliczanie tej kwoty do czasu zwrotu
+ * obiecywaloby pieniadze, ktorych nikt jeszcze nie dostal. Kto chce zobaczyc wynik
+ * z dotacja, wstawia ja jednym klikiem.
+ */
+function rysujPme2(p, pozycje) {
+  const el = $('pme2Info');
+  if (p.kWp === 0 || p.magazynKWh === 0) {
+    el.innerHTML = '<div class="naglowek">Dotacja na magazyn</div>'
+      + '<div class="wiaze">Program dotyczy magazynu energii. Ustaw pojemność powyżej zera, '
+      + 'żeby zobaczyć, ile mógłby dołożyć.</div>';
+    return;
+  }
+  if (p.magazynKWh < PME2.minimalnaPojemnoscKWh) {
+    el.innerHTML = '<div class="naglowek">Dotacja na magazyn: nie przysługuje</div>'
+      + `<div class="wiaze">Twoje ${p.magazynKWh} kWh nie sięga minimum `
+      + `${PME2.minimalnaPojemnoscKWh} kWh wymaganego w programie Przydomowe Magazyny `
+      + 'Energii. Poniżej tej pojemności wniosku nie da się złożyć.</div>';
+    return;
+  }
+
+  const d = dotacjaPME2({ pojemnoscKWh: p.magazynKWh, kosztMagazynu: pozycje.magazyn });
+  const sklep = cenaSklepowaMagazynu(p.magazynKWh);
+  const zaKWh = pozycje.magazyn / p.magazynKWh;
+  const opisReguly = {
+    udzialKosztow: `Wiąże <b>30% kosztu magazynu</b>, a nie limit ${PME2.zlZaKWh} zł za kWh `
+      + `(ten dałby ${zl(PME2.zlZaKWh * p.magazynKWh)}) ani górne ${zl(d.gorny)}.`,
+    zlZaKWh: `Wiąże limit <b>${PME2.zlZaKWh} zł za kWh</b> pojemności.`,
+    gornyLimit: `Wiąże <b>górny limit programu</b>, czyli ${zl(d.gorny)}.`,
+  }[d.wiaze];
+
+  el.innerHTML = `<div class="naglowek">Dotacja z programu Przydomowe Magazyny Energii</div>
+    <div class="kwota">ok. ${zl(d.kwota)}</div>
+    <div class="wiaze">${opisReguly} Nabór planowany na III kwartał 2026 - dopóki nie ruszy,
+    wynik liczymy bez tej kwoty.</div>
+    <div class="akcjarow">
+      <button class="akcja maly noprint" data-akcja="wstawDotacje">Policz z tą dotacją</button>
+      <span class="info" style="font-size:12.5px;color:var(--faint)">wpisze ${zl(d.kwota)}
+      w pole obok</span>
+    </div>
+    <div class="ostrzezenie">
+      <b>Uwaga na to, jak ten program działa.</b> Dotacja to procent kosztu, więc
+      <b>im drożej magazyn wyceniono na fakturze, tym większa dopłata</b> - aż do granicy
+      ${zl(PME2.maksKosztZaKWh)} za kWh. U Ciebie magazyn wychodzi
+      <b>${zl(zaKWh)} za kWh</b>, a sam sprzęt tej pojemności kosztuje w sklepie producenta
+      ${zl(sklep.kwota)} (${sklep.modulow} ${sklep.modulow === 1 ? 'moduł' : 'moduły'}
+      po 5,12 kWh, razem ${liczba(sklep.pojemnoscRzeczywista)} kWh).
+      Oferta z wysoko wycenionym magazynem da większą dotację, ale <b>nie jest przez to
+      dla Ciebie tańsza</b> - porównuj cenę za kWh, nie wysokość dopłaty.
+    </div>`;
+}
+
 function rysujDotacje(p, w) {
   const ulga = w.ulga ?? 0;
   const zaMaly = p.magazynKWh > 0 && p.magazynKWh < DOTACJE.pme2.minimalnaPojemnoscKWh;
@@ -582,6 +637,15 @@ function start() {
     });
   });
   $('btnCennik').addEventListener('click', () => { kosztRecznie = false; przelicz(); });
+  // Przycisk wstawiajacy szacunek dotacji powstaje razem z trescia bloku, wiec
+  // nasluchujemy na kontenerze, a nie na samym przycisku.
+  $('pme2Info').addEventListener('click', (zdarzenie) => {
+    if (zdarzenie.target.dataset.akcja !== 'wstawDotacje') return;
+    const p = czytajPola();
+    const d = dotacjaPME2({ pojemnoscKWh: p.magazynKWh, kosztMagazynu: czytajPozycje().magazyn });
+    $('dotacja').value = d.kwota;
+    przelicz();
+  });
   $('btnPdf').addEventListener('click', () => window.print());
   $('btnHtml').addEventListener('click', pobierzHtml);
   $('btnLink').addEventListener('click', async () => {
