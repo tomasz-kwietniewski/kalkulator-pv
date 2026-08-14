@@ -5,27 +5,51 @@
  */
 import profile from '../data/profiles.js';
 import rceDane from '../data/rce.js';
-import { symuluj } from './engine.js';
+import { symuluj, krzywaMagazynu } from './engine.js';
 import { rachunekRoczny, DYNAMICZNA } from './pricing.js';
 import {
-  kosztInstalacji, ulgaTermomodernizacyjna, zwrot, WIDELKI_OFERT_2025, DOTACJE,
+  pozycjeZCennika, sumaPozycji, rozdzielKwote, POZYCJE_KOSZTU,
+  kaskadaNakladu, zwrot, zwrotDwutorowo,
+  WIDELKI_OFERT_2025, WIDELKI_EPS, DOTACJE,
 } from './economics.js';
+import {
+  rysujMiesiace, rysujZwrot, rysujNasycenie, kolumnaPrzeplywu,
+  wszystkieWykresy, odswiezWykresy, KOLORY,
+} from './charts.js';
+import { zl, kwh, proc, zLatami, liczba, punktyProc } from './format.js';
 
 const rce = rceDane.rce;
 const $ = (id) => document.getElementById(id);
-const zl = (v) => Math.round(v).toLocaleString('pl-PL') + ' zł';
-const kwh = (v) => Math.round(v).toLocaleString('pl-PL') + ' kWh';
 
 /** Zuzycie auta: 20 tys. km daje ok. 6 100 kWh z gniazdka (model z danych wlasciciela). */
 const KWH_NA_KM = 0.305;
 
+/** Pola kosztowe maja wlasne id w formularzu - mapowanie na nazwy pozycji z economics.js. */
+const POLE_POZYCJI = {
+  panele: 'kosztPanele', falownik: 'kosztFalownik', magazyn: 'kosztMagazyn', eps: 'kosztEps',
+};
+
 const POLA = ['zuzycie', 'auto', 'orientacja', 'kwp', 'magazyn', 'grupa', 'eps',
-  'koszt', 'dotacja', 'pit', 'wzrostCen', 'rezerwa', 'dobieranie', 'podatnicy',
+  'kosztPanele', 'kosztFalownik', 'kosztMagazyn', 'kosztEps', 'koszt',
+  'dotacja', 'pit', 'wzrostCen', 'rezerwa', 'dobieranie', 'podatnicy',
   'mocAwaria', 'limitEps'];
 
-let wykresMies = null;
-let wykresZwrot = null;
+/** Pojemnosci, dla ktorych liczymy krzywa nasycenia. Kazda to pelna symulacja 8760 h. */
+const PUNKTY_KRZYWEJ = [0, 2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25, 27.5, 30];
+
+/**
+ * Czy uzytkownik wpisal wlasne kwoty. Dopoki nie - pozycje przeliczaja sie z cennika
+ * przy kazdej zmianie mocy albo pojemnosci.
+ */
 let kosztRecznie = false;
+
+/**
+ * Ostatnie niezerowe pozycje, w ktorych proporcjach rozdzielamy kwote laczna.
+ * Trzymane osobno od pol formularza celowo: gdy uzytkownik kasuje pole "Razem",
+ * zeby wpisac kwote od nowa, pola pozycji na moment zjezdzaja do zera - i bez tej
+ * kopii proporcje przepadlyby po pierwszym wpisanym znaku.
+ */
+let proporcjeKosztu = null;
 
 function czytajPola() {
   const grupa = $('grupa').value;
@@ -46,6 +70,35 @@ function czytajPola() {
     ladowanieZSieci: $('dobieranie').value === '1',
     podatnicy: +$('podatnicy').value,
   };
+}
+
+const czytajPozycje = () => Object.fromEntries(
+  POZYCJE_KOSZTU.map((k) => [k, +$(POLE_POZYCJI[k]).value || 0]),
+);
+
+function zapiszPozycje(pozycje) {
+  POZYCJE_KOSZTU.forEach((k) => { $(POLE_POZYCJI[k]).value = pozycje[k]; });
+  $('koszt').value = sumaPozycji(pozycje);
+  if (sumaPozycji(pozycje) > 0) proporcjeKosztu = { ...pozycje };
+}
+
+/**
+ * Reakcja na zmiane w polach kosztowych. Pozycje i kwota laczna sa dwoma widokami
+ * tej samej rzeczy, wiec edycja jednej strony musi przeliczyc druga.
+ */
+function obsluzKoszt(id, p) {
+  kosztRecznie = true;
+  if (id === 'koszt') {
+    const wzorzec = (proporcjeKosztu && sumaPozycji(proporcjeKosztu) > 0)
+      ? proporcjeKosztu
+      : pozycjeZCennika({ kWp: p.kWp, magazynKWh: p.magazynKWh, zasilanieAwaryjne: p.eps });
+    const nowe = rozdzielKwote(+$('koszt').value, wzorzec);
+    POZYCJE_KOSZTU.forEach((k) => { $(POLE_POZYCJI[k]).value = nowe[k]; });
+  } else {
+    const pozycje = czytajPozycje();
+    $('koszt').value = sumaPozycji(pozycje);
+    if (sumaPozycji(pozycje) > 0) proporcjeKosztu = { ...pozycje };
+  }
 }
 
 /** Jeden wariant instalacji: symulacja + rachunek. */
@@ -70,82 +123,95 @@ function przelicz() {
   const p = czytajPola();
   $('kwpOut').textContent = p.kWp + ' kWp';
   $('magazynOut').textContent = p.magazynKWh + ' kWh';
+  $('kosztEps').disabled = !p.eps;
+
+  // Dopoki uzytkownik nie wpisal wlasnych kwot, pozycje ida z cennika odniesienia.
+  if (!kosztRecznie) {
+    zapiszPozycje(pozycjeZCennika({
+      kWp: p.kWp, magazynKWh: p.magazynKWh, zasilanieAwaryjne: p.eps,
+    }));
+  } else if (!p.eps) {
+    $('kosztEps').value = 0;
+    $('koszt').value = sumaPozycji(czytajPozycje());
+  }
+  const pozycje = czytajPozycje();
 
   // Trzy warianty obok siebie. Przy magazynie 0 trzeci bylby kopia drugiego, wiec
   // wtedy pokazujemy przykladowy magazyn 10 kWh - zeby bylo widac, co by dal.
   const magazynPokazowy = p.magazynKWh > 0 ? p.magazynKWh : 10;
+  // Koszt magazynu bierzemy z pozycji, a gdy uzytkownik magazynu nie planuje - z cennika
+  // dla pojemnosci pokazowej. Dzieki rozbiciu na pozycje nie trzeba juz nic skalowac:
+  // cena magazynu jest wprost z oferty, a nie zgadywana z proporcji calosci.
+  const kosztMagazynuPokazowego = p.magazynKWh > 0
+    ? pozycje.magazyn
+    : pozycjeZCennika({ kWp: p.kWp, magazynKWh: magazynPokazowy }).magazyn;
+  const bezMagazynu = pozycje.panele + pozycje.falownik + pozycje.eps;
+
   const warianty = [
-    { nazwa: 'Bez fotowoltaiki', kWp: 0, magazyn: 0 },
-    { nazwa: `Sama fotowoltaika ${p.kWp} kWp`, kWp: p.kWp, magazyn: 0 },
+    { nazwa: 'Bez fotowoltaiki', kWp: 0, magazyn: 0, koszt: 0 },
+    { nazwa: `Sama fotowoltaika ${p.kWp} kWp`, kWp: p.kWp, magazyn: 0, koszt: bezMagazynu },
     {
       nazwa: `Fotowoltaika + magazyn ${magazynPokazowy} kWh`
         + (p.magazynKWh > 0 ? '' : ' (dla porównania)'),
-      kWp: p.kWp, magazyn: magazynPokazowy,
+      kWp: p.kWp, magazyn: magazynPokazowy, koszt: bezMagazynu + kosztMagazynuPokazowego,
     },
   ].map((w) => ({ ...w, ...policzWariant(p, w.kWp, w.magazyn) }));
 
   const bazowy = warianty[0].rachunek.brutto;
 
-  // Koszt: dopoki uzytkownik nie wpisze wlasnego, liczymy z cen odniesienia.
-  warianty.forEach((w) => {
-    w.koszt = w.kWp === 0 ? 0
-      : kosztInstalacji({ kWp: w.kWp, magazynKWh: w.magazyn, zasilanieAwaryjne: p.eps });
-  });
-  if (!kosztRecznie) $('koszt').value = warianty[2].koszt;
-  const kosztWpisany = +$('koszt').value;
-  if (kosztRecznie && warianty[2].koszt > 0) {
-    // Wlasna kwota dotyczy pelnego wariantu; pozostale skalujemy proporcjonalnie,
-    // zeby porownanie "sama PV vs PV z magazynem" pozostalo spojne.
-    const wsp = kosztWpisany / warianty[2].koszt;
-    warianty.forEach((w) => { w.koszt = Math.round(w.koszt * wsp); });
-  }
-
   warianty.forEach((w) => {
     w.oszczednosc = bazowy - w.rachunek.brutto;
-    const ulga = ulgaTermomodernizacyjna({
-      koszt: w.koszt, dotacja: w.kWp ? p.dotacja : 0, stawka: p.pit, podatnicy: p.podatnicy,
+    if (w.kWp === 0) { w.kaskada = null; w.zwrot = null; return; }
+    w.kaskada = kaskadaNakladu({
+      koszt: w.koszt, dotacja: p.dotacja, stawka: p.pit, podatnicy: p.podatnicy,
     });
-    w.ulga = ulga;
-    w.naklad = Math.max(0, w.koszt - (w.kWp ? p.dotacja : 0) - ulga);
-    w.zwrot = w.kWp === 0 ? null
-      : zwrot({ naklad: w.naklad, oszczednoscRoczna: w.oszczednosc, wzrostCen: p.wzrostCen });
+    w.ulga = w.kaskada.ulga;
+    w.naklad = w.kaskada.naklad;
+    w.zwrot = zwrotDwutorowo({
+      koszt: w.koszt, naklad: w.naklad,
+      oszczednoscRoczna: w.oszczednosc, wzrostCen: p.wzrostCen,
+    });
   });
 
-  rysujKarty(p, warianty);
+  const wybrany = p.magazynKWh > 0 ? warianty[2] : warianty[1];
+
+  rysujKarty(p, warianty, wybrany);
   rysujTabele(warianty);
-  rysujTaryfy(p, warianty[2]);
-  rysujDotacje(p, warianty[2]);
-  rysujPasek(warianty[2].koszt);
-  rysujWykresy(warianty);
+  rysujTaryfy(p);
+  rysujMagazyn(p, warianty);
+  rysujKaskade(p, wybrany);
+  rysujHero(p, wybrany);
+  rysujDotacje(p, wybrany);
+  rysujPasek(sumaPozycji(pozycje));
+  rysujMiesiace($('wykresMies'), warianty[2].wynik.miesiace);
+  rysujWykresZwrotu(warianty);
   rysujEps(p);
   zapiszWAdresie();
 }
 
-function rysujKarty(p, w) {
+/* --- sekcja 3: wynik ------------------------------------------------------------- */
+
+function rysujKarty(p, w, karta) {
   const pelny = w[2];
   const sama = w[1];
   const dodatekMagazynu = pelny.oszczednosc - sama.oszczednosc;
-  const kosztMagazynu = pelny.naklad - sama.naklad;
-  const zwrotMagazynu = dodatekMagazynu > 0 ? kosztMagazynu / dodatekMagazynu : null;
 
-  const wybrany = p.magazynKWh > 0 ? pelny : sama;
   $('podsumowanie').innerHTML = pelny.kWp === 0
     ? 'Ustaw moc fotowoltaiki powyżej zera, żeby zobaczyć wynik.'
     : `Przy zużyciu ${kwh(p.zuzycieDomuKWh)} rocznie instalacja ${pelny.kWp} kWp`
       + (p.magazynKWh > 0 ? ` z magazynem ${p.magazynKWh} kWh` : ' bez magazynu')
       + ` obniża rachunek z <b>${zl(w[0].rachunek.brutto)}</b> `
-      + `do <b>${zl(wybrany.rachunek.brutto)}</b> rocznie.`;
+      + `do <b>${zl(karta.rachunek.brutto)}</b> rocznie.`;
 
-  const karta = p.magazynKWh > 0 ? pelny : sama;
   $('karty').innerHTML = [
     ['Rachunek dziś', zl(w[0].rachunek.brutto), 'c', 'bez fotowoltaiki'],
     ['Rachunek po instalacji', zl(karta.rachunek.brutto), 'g',
       `${karta.kWp} kWp${p.magazynKWh > 0 ? ' + ' + p.magazynKWh + ' kWh' : ', bez magazynu'}`],
     ['Oszczędność rocznie', zl(karta.oszczednosc), 'g',
-      p.magazynKWh > 0 ? `w tym magazyn: ${zl(dodatekMagazynu)}`
+      p.magazynKWh > 0 ? `w tym dzięki magazynowi: ${zl(dodatekMagazynu)}`
         : `magazyn ${pelny.magazyn} kWh dodałby ${zl(dodatekMagazynu)}`],
-    ['Zwrot nakładu', karta.zwrot?.rokZwrotu ? karta.zwrot.rokZwrotu.toFixed(1) + ' lat' : 'ponad 20 lat',
-      'a', `sam magazyn: ${zwrotMagazynu && zwrotMagazynu < 40 ? zwrotMagazynu.toFixed(0) + ' lat' : 'nie zwraca się'}`],
+    ['Autokonsumpcja', proc(karta.wynik.autokonsumpcja), 'b',
+      `tyle własnego prądu zużywasz, reszta idzie do sieci`],
   ].map(([lab, val, kl, foot]) =>
     `<div class="card"><div class="lab">${lab}</div><div class="val ${kl}">${val}</div>`
     + `<div class="foot">${foot}</div></div>`).join('');
@@ -153,43 +219,38 @@ function rysujKarty(p, w) {
 
 function rysujTabele(w) {
   const najlepszy = w.reduce((a, b) => {
-    const ra = a.zwrot?.rokZwrotu ?? Infinity;
-    const rb = b.zwrot?.rokZwrotu ?? Infinity;
+    const ra = a.zwrot?.poOdzyskach.rokZwrotu ?? Infinity;
+    const rb = b.zwrot?.poOdzyskach.rokZwrotu ?? Infinity;
     return rb < ra ? b : a;
   });
   $('tabela').querySelector('tbody').innerHTML = w.map((x) => `<tr${x === najlepszy ? ' class="najlepszy"' : ''}>
     <td>${x.nazwa}</td>
     <td>${zl(x.rachunek.brutto)}</td>
     <td>${x.kWp ? zl(x.oszczednosc) : '-'}</td>
-    <td>${x.kWp ? x.wynik.autokonsumpcja.toFixed(0) + '%' : '-'}</td>
-    <td>${x.wynik.samowystarczalnosc.toFixed(0)}%</td>
+    <td>${x.kWp ? proc(x.wynik.autokonsumpcja) : '-'}</td>
+    <td>${proc(x.wynik.samowystarczalnosc)}</td>
     <td>${x.kWp ? zl(x.naklad) : '-'}</td>
-    <td>${x.zwrot?.rokZwrotu ? x.zwrot.rokZwrotu.toFixed(1) + ' lat' : (x.kWp ? '> 20 lat' : '-')}</td>
+    <td>${x.zwrot?.poOdzyskach.rokZwrotu ? zLatami(x.zwrot.poOdzyskach.rokZwrotu) : (x.kWp ? 'ponad 20 lat' : '-')}</td>
   </tr>`).join('');
 }
 
 /** Porownanie taryf na tej samej instalacji - to osobna decyzja niz sama fotowoltaika. */
-function rysujTaryfy(p, pelny) {
-  const wyniki = ['G11', 'G12', 'G12w'].map((g) => {
+function rysujTaryfy(p) {
+  const policz = (g, dynamiczna) => {
     const w = symuluj({
       kWp: p.kWp, magazynKWh: p.magazynKWh,
       zuzycieDomuKWh: p.zuzycieDomuKWh, poborAutaKWh: p.poborAutaKWh,
       orientacja: p.orientacja, rezerwaAwaryjna: p.rezerwaAwaryjna, grupaTaryfowa: g,
       ladowanieZSieci: p.ladowanieZSieci && p.magazynKWh > 0 && g !== 'G11',
     }, profile);
-    return { g, brutto: rachunekRoczny(w, profile, g, { rce, netBilling: p.kWp > 0 }).brutto };
-  });
-  const dyn = (() => {
-    const w = symuluj({
-      kWp: p.kWp, magazynKWh: p.magazynKWh, zuzycieDomuKWh: p.zuzycieDomuKWh,
-      poborAutaKWh: p.poborAutaKWh, orientacja: p.orientacja,
-      rezerwaAwaryjna: p.rezerwaAwaryjna, grupaTaryfowa: 'G12w',
-      ladowanieZSieci: p.ladowanieZSieci && p.magazynKWh > 0,
-    }, profile);
-    return rachunekRoczny(w, profile, 'G12w', { rce, dynamiczna: true, netBilling: p.kWp > 0 }).brutto;
-  })();
+    return rachunekRoczny(w, profile, g, { rce, dynamiczna, netBilling: p.kWp > 0 }).brutto;
+  };
 
-  const wszystkie = [...wyniki, { g: 'dynamiczna', brutto: dyn }].sort((a, b) => a.brutto - b.brutto);
+  const wszystkie = [
+    ...['G11', 'G12', 'G12w'].map((g) => ({ g, brutto: policz(g, false) })),
+    { g: 'dynamiczna', brutto: policz('G12w', true) },
+  ].sort((a, b) => a.brutto - b.brutto);
+
   const naj = wszystkie[0];
   const nazwy = { G11: 'G11', G12: 'G12', G12w: 'G12w', dynamiczna: 'taryfa dynamiczna' };
   $('taryfaInfo').innerHTML = `<b>Wybór taryfy to osobna decyzja niż fotowoltaika</b> - i darmowa.
@@ -200,8 +261,194 @@ function rysujTaryfy(p, pelny) {
     czapka cenowa wygasa z końcem 2026 i zakładamy, że nie zostanie przedłużona.</span>`;
 }
 
-function rysujDotacje(p, pelny) {
-  const ulga = pelny.ulga;
+/* --- sekcja 4: co daje magazyn --------------------------------------------------- */
+
+function rysujMagazyn(p, w) {
+  const sama = w[1];
+  const pelny = w[2];
+  const pojemnosc = pelny.magazyn;
+  const hipotetyczny = p.magazynKWh === 0;
+
+  const dodatek = pelny.oszczednosc - sama.oszczednosc;
+  const punkty = pelny.wynik.autokonsumpcja - sama.wynik.autokonsumpcja;
+  const mniejDoSieci = sama.wynik.eksportKWh - pelny.wynik.eksportKWh;
+  const kosztMagazynu = pelny.koszt - sama.koszt;
+  const nakladMagazynu = pelny.naklad - sama.naklad;
+  // Zwrot samego magazynu liczymy tak samo jak zwrot calosci - z uwzglednieniem wzrostu
+  // cen energii. Proste dzielenie nakladu przez roczna oszczednosc dawaloby inna liczbe
+  // niz reszta strony i wygladalo na blad.
+  const zwrotMagazynu = dodatek > 0
+    ? zwrot({ naklad: nakladMagazynu, oszczednoscRoczna: dodatek, lat: 40, wzrostCen: p.wzrostCen }).rokZwrotu
+    : null;
+
+  const zwrotSamej = sama.zwrot?.poOdzyskach.rokZwrotu;
+  const zwrotPelnej = pelny.zwrot?.poOdzyskach.rokZwrotu;
+  // Werdykt formulujemy jako wybor miedzy dwiema sensownymi opcjami, a nie jako ocene.
+  // Na tym profilu magazyn zwykle wydluza zwrot calosci i to zostaje powiedziane wprost,
+  // ale sasiad ma z tego wyjsc z decyzja do podjecia, a nie z poczuciem, ze go odradzamy.
+  let werdykt;
+  if (zwrotPelnej == null) {
+    werdykt = 'Przy tych parametrach wariant z magazynem nie wychodzi na zero w ciągu 20 lat.';
+  } else if (zwrotSamej == null) {
+    werdykt = `Wariant z magazynem wychodzi na zero po ${zLatami(zwrotPelnej)}, `
+      + 'a sama fotowoltaika nie zdąża w ciągu 20 lat.';
+  } else if (zwrotPelnej < zwrotSamej) {
+    werdykt = `Magazyn tu <b>skraca</b> zwrot całości z ${zLatami(zwrotSamej)} do `
+      + `${zLatami(zwrotPelnej)}, mimo że początkowa inwestycja jest większa.`;
+  } else {
+    const obaSzybkie = zwrotPelnej <= 12;
+    werdykt = `Zwrot całości wydłuża się z ${zLatami(zwrotSamej)} do ${zLatami(zwrotPelnej)}, `
+      + 'bo magazyn zwraca się wolniej niż same panele. '
+      + (obaSzybkie
+        ? 'Obie wersje wychodzą na plus w rozsądnym czasie, więc to raczej wybór między '
+          + 'szybszym zwrotem a większą niezależnością od sieci niż między lepszą a gorszą '
+          + 'inwestycją. Magazyn dokłada do tego zasilanie awaryjne i spokój przy droższym prądzie.'
+        : 'Przy tych cenach magazyn jest więc raczej zakupem pod niezależność od sieci '
+          + 'i zasilanie awaryjne niż pod oszczędność.');
+  }
+
+  $('magazynLead').innerHTML = p.kWp === 0
+    ? 'Ustaw moc fotowoltaiki powyżej zera.'
+    : (hipotetyczny ? `Nie planujesz magazynu, więc liczymy przykładowe <b>${pojemnosc} kWh</b>, `
+      + 'żeby było widać, co by zmieniło. ' : `Magazyn <b>${pojemnosc} kWh</b> przy tej fotowoltaice. `)
+      + `Autokonsumpcja rośnie z ${proc(sama.wynik.autokonsumpcja)} do `
+      + `<b>${proc(pelny.wynik.autokonsumpcja)}</b>, czyli o ${punktyProc(punkty)}. `
+      + werdykt;
+
+  $('kartyMagazyn').innerHTML = [
+    ['Autokonsumpcja', `+${punkty.toFixed(0)} pkt`, 'b',
+      `${proc(sama.wynik.autokonsumpcja)} bez magazynu, ${proc(pelny.wynik.autokonsumpcja)} z nim`],
+    ['Mniej oddane do sieci', kwh(mniejDoSieci), 'g',
+      `zamiast sprzedawać po cenie giełdowej, zużywasz u siebie`],
+    ['Oszczędność więcej', zl(dodatek) + '/rok', 'g',
+      `ponad to, co daje sama fotowoltaika`],
+    ['Sam magazyn zwraca się w', zwrotMagazynu ? zLatami(zwrotMagazynu) : 'ponad 40 lat',
+      'a', `${zl(kosztMagazynu)} z oferty, ${zl(nakladMagazynu)} po odzyskach`],
+  ].map(([lab, val, kl, foot]) =>
+    `<div class="card"><div class="lab">${lab}</div><div class="val ${kl}">${val}</div>`
+    + `<div class="foot">${foot}</div></div>`).join('');
+
+  $('przeplywy').innerHTML =
+    kolumnaPrzeplywu('Sama fotowoltaika', `${p.kWp} kWp, bez magazynu`, sama.wynik)
+    + kolumnaPrzeplywu(`Z magazynem ${pojemnosc} kWh`,
+      `${p.kWp} kWp` + (hipotetyczny ? ' - wariant porównawczy' : ''), pelny.wynik);
+
+  const zSieciDoMagazynu = pelny.wynik.doMagazynuZSieci;
+  $('przeplywOpis').innerHTML = `Straty ładowania i rozładowania magazynu to `
+    + `${kwh(pelny.wynik.stratyMagazynu)} rocznie i są już odjęte od tego, co magazyn oddaje domowi.`
+    + (zSieciDoMagazynu > 1
+      ? ` Pozycja „z magazynu" obejmuje też ${kwh(zSieciDoMagazynu)} energii dobranej z sieci `
+        + 'w taniej strefie - to nie jest prąd z paneli, tylko tańszy prąd kupiony na później.'
+      : '');
+
+  rysujKrzywa(p, pojemnosc);
+}
+
+function rysujKrzywa(p, wybrana) {
+  const krzywa = krzywaMagazynu({
+    kWp: p.kWp,
+    zuzycieDomuKWh: p.zuzycieDomuKWh,
+    poborAutaKWh: p.poborAutaKWh,
+    orientacja: p.orientacja,
+    rezerwaAwaryjna: p.rezerwaAwaryjna,
+    grupaTaryfowa: p.grupaRozliczen,
+    ladowanieZSieci: p.ladowanieZSieci && p.grupaRozliczen !== 'G11',
+  }, profile, PUNKTY_KRZYWEJ);
+
+  rysujNasycenie($('wykresNasycenie'), krzywa, wybrana);
+
+  // Gdzie krzywa przestaje sie oplacac: pierwszy punkt, w ktorym kolejne 2,5 kWh
+  // daje mniej niz jeden punkt procentowy autokonsumpcji.
+  const prog = krzywa.findIndex((punkt, i) =>
+    i > 0 && punkt.autokonsumpcja - krzywa[i - 1].autokonsumpcja < 1);
+  const wPunkcie = krzywa.find((x) => Math.abs(x.magazynKWh - wybrana) < 1.26);
+  $('nasycenieOpis').innerHTML = (wPunkcie
+    ? `Przy ${wybrana} kWh zużywasz u siebie <b>${proc(wPunkcie.autokonsumpcja, 1)}</b> własnej produkcji, `
+      + `a ${proc(wPunkcie.samowystarczalnosc, 1)} prądu w domu pochodzi z instalacji. `
+    : '')
+    + (prog > 0
+      ? `Powyżej <b>${liczba(krzywa[prog - 1].magazynKWh)} kWh</b> każde kolejne 2,5 kWh pojemności podnosi `
+        + 'autokonsumpcję o mniej niż punkt procentowy - od tego miejsca dopłacasz głównie za rezerwę '
+        + 'na wypadek awarii, a nie za oszczędność.'
+      : 'Na tym profilu krzywa nie zdążyła się wypłaszczyć w pokazanym zakresie - '
+        + 'zużycie jest na tyle duże, że magazyn wciąż ma co przyjmować.');
+}
+
+/* --- sekcja 5: koszt i zwrot ----------------------------------------------------- */
+
+function rysujKaskade(p, w) {
+  if (!w.kaskada) { $('kaskada').innerHTML = ''; return; }
+  const k = w.kaskada;
+  const opis = `${p.kWp} kWp`
+    + (p.magazynKWh > 0 ? `, magazyn ${p.magazynKWh} kWh` : ', bez magazynu')
+    + (p.eps ? ', z zasilaniem awaryjnym' : '');
+
+  const wiersz = (klasa, tytul, podpis, kwota) => `<div class="w ${klasa}">
+    <span class="op">${tytul}<small>${podpis}</small></span>
+    <span class="kw">${kwota}</span></div>`;
+
+  $('kaskada').innerHTML = wiersz('', 'Koszt z oferty', opis, zl(k.koszt))
+    + (k.dotacja > 0
+      ? wiersz('odjecie', 'Dotacja', 'wpisana przez Ciebie', '- ' + zl(k.dotacja))
+      : wiersz('odjecie', 'Dotacja', 'brak czynnego naboru na dziś', '0 zł'))
+    + (k.ulga > 0
+      ? wiersz('odjecie', 'Ulga termomodernizacyjna',
+        'wraca dopiero przy rozliczeniu PIT za rok, w którym zapłacisz fakturę', '- ' + zl(k.ulga))
+      : wiersz('odjecie', 'Ulga termomodernizacyjna',
+        'odliczenie od dochodu - przy zerowym podatku warte zero', '0 zł'))
+    + wiersz('suma', 'Realny koszt inwestycji',
+      'tyle zostaje z kieszeni po wszystkich odzyskach', zl(k.naklad));
+}
+
+function rysujHero(p, w) {
+  if (!w.zwrot) {
+    $('heroZwrot').innerHTML = '<div class="glowny"><div class="lab">Zwrot</div>'
+      + '<div class="duza">-</div><div class="pod">Ustaw moc fotowoltaiki powyżej zera.</div></div>';
+    return;
+  }
+  const poOdzyskach = w.zwrot.poOdzyskach.rokZwrotu;
+  const odPelnej = w.zwrot.odPelnejKwoty.rokZwrotu;
+  const saldo = w.zwrot.poOdzyskach.saldoKoncowe;
+
+  $('heroZwrot').innerHTML = `
+    <div class="glowny">
+      <div class="lab">Inwestycja wychodzi na zero po</div>
+      <div class="duza">${poOdzyskach ? zLatami(poOdzyskach) : 'ponad 20 latach'}</div>
+      <div class="pod">licząc od realnego kosztu ${zl(w.naklad)}, czyli po dotacji i uldze</div>
+    </div>
+    <div class="obok">
+      <div class="lab">Od pełnej kwoty z oferty</div>
+      <div class="srednia">${odPelnej ? zLatami(odPelnej) : 'ponad 20 lat'}</div>
+      <div class="pod">${zl(w.koszt)} trzeba mieć na starcie - ulga wraca dopiero
+      przy rozliczeniu PIT, a nie w dniu montażu</div>
+    </div>
+    <div class="obok">
+      <div class="lab">Po 20 latach na plusie</div>
+      <div class="srednia">${saldo > 0 ? '+' + zl(saldo) : zl(saldo)}</div>
+      <div class="pod">przy wzroście cen energii ${(100 * p.wzrostCen).toFixed(1).replace('.', ',')}%
+      rocznie i degradacji paneli 0,5% rocznie</div>
+    </div>`;
+}
+
+function rysujWykresZwrotu(w) {
+  rysujZwrot($('wykresZwrot'), [
+    {
+      nazwa: 'sama fotowoltaika', skrot: 'sama PV',
+      przeplyw: w[1].zwrot?.poOdzyskach.przeplyw,
+      rokZwrotu: w[1].zwrot?.poOdzyskach.rokZwrotu,
+      kolor: KOLORY.niebieski,
+    },
+    {
+      nazwa: 'fotowoltaika z magazynem', skrot: 'z magazynem',
+      przeplyw: w[2].zwrot?.poOdzyskach.przeplyw,
+      rokZwrotu: w[2].zwrot?.poOdzyskach.rokZwrotu,
+      kolor: KOLORY.zielony, grubosc: 2.5,
+    },
+  ]);
+}
+
+function rysujDotacje(p, w) {
+  const ulga = w.ulga ?? 0;
   const zaMaly = p.magazynKWh > 0 && p.magazynKWh < DOTACJE.pme2.minimalnaPojemnoscKWh;
   $('dotacjeInfo').innerHTML = `<p><b>${DOTACJE.mojPrad6.nazwa}:</b> ${DOTACJE.mojPrad6.info}</p>
     <p><b>${DOTACJE.pme1.nazwa}:</b> ${DOTACJE.pme1.info}</p>
@@ -227,50 +474,13 @@ function rysujPasek(koszt) {
   el.querySelector('.zakres').style.left = pct(min) + '%';
   el.querySelector('.zakres').style.width = (pct(max) - pct(min)) + '%';
   el.querySelector('.znacznik').style.left = Math.min(99, Math.max(0, pct(koszt))) + '%';
+  $('kosztInfo').textContent = kosztRecznie
+    ? 'Liczymy z Twoich kwot.'
+    : 'Ceny sprzętu ze sklepu producenta (sierpień 2026) plus montaż. '
+      + `Zasilanie awaryjne wyceniano od ${zl(WIDELKI_EPS.min)} do ${zl(WIDELKI_EPS.max)}.`;
 }
 
-const MIES = ['sie', 'wrz', 'paź', 'lis', 'gru', 'sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip'];
-
-function rysujWykresy(w) {
-  const pelny = w[2];
-  const wspolne = {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 } } } },
-    scales: { y: { beginAtZero: true, grid: { color: '#eceee9' } }, x: { grid: { display: false } } },
-  };
-
-  const dane = {
-    labels: MIES,
-    datasets: [
-      { label: 'produkcja PV', data: pelny.wynik.miesiace.map((m) => Math.round(m.produkcja)), backgroundColor: '#1d9e75' },
-      { label: 'zużycie', data: pelny.wynik.miesiace.map((m) => Math.round(m.zuzycie)), backgroundColor: '#d85a30' },
-      { label: 'pobór z sieci', data: pelny.wynik.miesiace.map((m) => Math.round(m.imp)), backgroundColor: '#ba7517' },
-      { label: 'oddane do sieci', data: pelny.wynik.miesiace.map((m) => Math.round(m.eksport)), backgroundColor: '#2f6fb0' },
-    ],
-  };
-  if (wykresMies) { wykresMies.data = dane; wykresMies.update(); }
-  else wykresMies = new Chart($('wykresMies'), { type: 'bar', data: dane, options: wspolne });
-
-  const lata = Array.from({ length: 21 }, (_, i) => i);
-  const daneZ = {
-    labels: lata,
-    datasets: [
-      { label: 'sama fotowoltaika', data: w[1].zwrot?.przeplyw.map(Math.round) ?? [],
-        borderColor: '#2f6fb0', backgroundColor: 'transparent', tension: .2, pointRadius: 0 },
-      { label: 'fotowoltaika z magazynem', data: w[2].zwrot?.przeplyw.map(Math.round) ?? [],
-        borderColor: '#1d9e75', backgroundColor: 'transparent', tension: .2, pointRadius: 0 },
-    ],
-  };
-  const opcjeZ = {
-    ...wspolne,
-    scales: {
-      y: { grid: { color: '#eceee9' }, ticks: { callback: (v) => (v / 1000).toFixed(0) + ' tys.' } },
-      x: { grid: { display: false }, title: { display: true, text: 'lata od instalacji' } },
-    },
-  };
-  if (wykresZwrot) { wykresZwrot.data = daneZ; wykresZwrot.options = opcjeZ; wykresZwrot.update(); }
-  else wykresZwrot = new Chart($('wykresZwrot'), { type: 'line', data: daneZ, options: opcjeZ });
-}
+/* --- sekcja 6: zasilanie awaryjne ------------------------------------------------ */
 
 function rysujEps(p) {
   const moc = +$('mocAwaria').value;
@@ -286,7 +496,7 @@ function rysujEps(p) {
        Na co dzień do autokonsumpcji pracuje ${uzyteczna.toFixed(1)} kWh z ${p.magazynKWh} kWh nominalnych.`
     : `<b>Nie zmieścisz się.</b> Chcesz ${moc} kW, a obwód awaryjny wytrzyma ${limit} kW -
        przy takim poborze zabezpieczenie wyłączy zasilanie. Albo ogranicz listę odbiorników,
-       albo dopytaj instalatora o zabezpieczenie i rozłożenie obwodu na fazy.`;
+       albo zapytaj o wariant z pełną rozdzielnicą i automatycznym przełącznikiem.`;
 }
 
 /* --- zapis i odtwarzanie stanu; fragment adresu nie trafia do serwera --- */
@@ -308,7 +518,21 @@ function odtworzZAdresu() {
     if (el.type === 'checkbox') el.checked = par.get(id) === '1';
     else el.value = par.get(id);
   });
-  if (par.get('koszt') && +par.get('koszt') > 0) kosztRecznie = true;
+  if (+par.get('koszt') > 0) {
+    kosztRecznie = true;
+    const pozycje = czytajPozycje();
+    // Starsze linki maja tylko kwote laczna - rozdzielamy ja na pozycje wedlug cennika.
+    if (sumaPozycji(pozycje) === 0) {
+      const wzorzec = pozycjeZCennika({
+        kWp: +$('kwp').value, magazynKWh: +$('magazyn').value, zasilanieAwaryjne: $('eps').checked,
+      });
+      const nowe = rozdzielKwote(+par.get('koszt'), wzorzec);
+      POZYCJE_KOSZTU.forEach((k) => { $(POLE_POZYCJI[k]).value = nowe[k]; });
+      proporcjeKosztu = { ...nowe };
+    } else {
+      proporcjeKosztu = { ...pozycje };
+    }
+  }
 }
 
 function pobierzHtml() {
@@ -316,12 +540,13 @@ function pobierzHtml() {
   const kopia = document.documentElement.cloneNode(true);
   kopia.querySelectorAll('script').forEach((s) => s.remove());
   kopia.querySelectorAll('.noprint').forEach((s) => s.remove());
-  [['wykresMies', wykresMies], ['wykresZwrot', wykresZwrot]].forEach(([id, ch]) => {
-    if (!ch) return;
+  wszystkieWykresy().forEach(([id, wykres]) => {
+    const cel = kopia.querySelector('#' + id);
+    if (!cel) return;
     const img = kopia.ownerDocument.createElement('img');
-    img.src = ch.toBase64Image();
+    img.src = wykres.toBase64Image();
     img.style.width = '100%';
-    kopia.querySelector('#' + id).replaceWith(img);
+    cel.replaceWith(img);
   });
   // Wartosci pol wpisujemy na sztywno, bo klon nie zachowuje stanu formularzy.
   POLA.forEach((id) => {
@@ -341,16 +566,22 @@ function pobierzHtml() {
   URL.revokeObjectURL(a.href);
 }
 
+const POLA_KOSZTU = ['koszt', ...Object.values(POLE_POZYCJI)];
+
 function start() {
   odtworzZAdresu();
   POLA.forEach((id) => {
     const el = $(id);
     el.addEventListener('input', () => {
-      if (id === 'koszt') kosztRecznie = true;
+      if (POLA_KOSZTU.includes(id)) obsluzKoszt(id, czytajPola());
+      // Zmiana mocy, pojemnosci albo zasilania awaryjnego zmienia to, co jest w ofercie,
+      // wiec wracamy do cennika - inaczej kwota z poprzedniej konfiguracji zostalaby
+      // przypisana do nowej i cicho zafalszowala zwrot.
       if (['kwp', 'magazyn', 'eps'].includes(id)) kosztRecznie = false;
       przelicz();
     });
   });
+  $('btnCennik').addEventListener('click', () => { kosztRecznie = false; przelicz(); });
   $('btnPdf').addEventListener('click', () => window.print());
   $('btnHtml').addEventListener('click', pobierzHtml);
   $('btnLink').addEventListener('click', async () => {
@@ -359,9 +590,7 @@ function start() {
     setTimeout(() => { $('btnLink').textContent = 'Skopiuj link z moimi liczbami'; }, 2000);
   });
   // Chart.js rysuje canvas dopiero po ulozeniu strony - przed drukiem wymuszamy odswiezenie.
-  window.addEventListener('beforeprint', () => {
-    wykresMies?.resize(); wykresZwrot?.resize();
-  });
+  window.addEventListener('beforeprint', odswiezWykresy);
   przelicz();
 }
 

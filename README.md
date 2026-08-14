@@ -17,6 +17,32 @@ której użytkownik nie zna, a która najmocniej decyduje o wyniku. Ten ją **li
 bo ma zmierzony profil produkcji i zużycia co godzinę. Dzięki temu potrafi odpowiedzieć
 na pytanie, które generyczne kalkulatory obchodzą bokiem: **czy magazyn się zwraca**.
 
+## Co wychodzi w sprawie magazynu
+
+Na profilu domu odniesienia (9 kWp, zużycie 11 MWh, taryfa G12w) odpowiedź jest
+niewygodna i dlatego warto ją mieć wprost:
+
+| Pojemność | Autokonsumpcja | Oddane do sieci | Zwrot całości | Zwrot samego magazynu |
+|---|---|---|---|---|
+| brak | 44% | 4 653 kWh | 2,9 roku | - |
+| 5 kWh | 56% | 3 703 kWh | 3,7 roku | 13,3 roku |
+| 10 kWh | 64% | 3 041 kWh | 4,2 roku | 12,5 roku |
+| 15 kWh | 69% | 2 559 kWh | 4,7 roku | 13,3 roku |
+| 20 kWh | 73% | 2 284 kWh | 5,2 roku | 14,4 roku |
+
+(9 kWp, zużycie 11 MWh, taryfa G12w, ceny sprzętu z sierpnia 2026 plus montaż,
+ulga 12%, wzrost cen energii 4% rocznie, bez zasilania awaryjnego)
+
+Magazyn robi dokładnie to, czego się po nim spodziewamy: podnosi autokonsumpcję z 44%
+do niemal 70% i zatrzymuje w domu ponad 2 000 kWh rocznie, które inaczej poszłyby do
+sieci za ułamek ceny. Ale **wydłuża czas zwrotu całej inwestycji**, bo kosztuje więcej,
+niż oszczędza. Kupuje się nim niezależność od sieci i zasilanie awaryjne, a nie szybszy
+zwrot. Kalkulator mówi to wprost, zamiast chować za jedną sumaryczną liczbą.
+
+Widać też, że sam magazyn wypada najlepiej w okolicach **10 kWh** - mniejszy nie zdąży
+się nasycić przez dobę, większy stoi pusty przez większość roku. A powyżej ok. 22 kWh
+każde kolejne 2,5 kWh pojemności podnosi autokonsumpcję o mniej niż punkt procentowy.
+
 ## Jak sprawdzono, że nie zmyśla
 
 `test/validate.test.mjs` uruchamia silnik na zmierzonym profilu i porównuje wynik
@@ -50,7 +76,9 @@ który nigdy nie trafia do serwera.
 index.html            strona
 src/engine.js         symulacja 8760 h: PV, dom, magazyn, siec (bez DOM, testowalny z Node)
 src/pricing.js        taryfy PGE, dystrybucja, oplaty, net-billing, taryfa dynamiczna
-src/economics.js      koszt instalacji, dotacje, ulga, czas zwrotu
+src/economics.js      pozycje kosztowe, dotacje, ulga, kaskada nakladu, czas zwrotu
+src/charts.js         wykresy, znacznik punktu zwrotu, diagram przeplywu energii
+src/format.js         formatowanie liczb po polsku (kwoty, procenty, odmiana lat)
 src/ui.js             warstwa interfejsu - nie liczy niczego sama
 data/profiles.js      profile godzinowe (anonimowe: same znormalizowane ksztalty)
 data/rce.js           godzinowe ceny RCE z API PSE
@@ -63,7 +91,11 @@ bez adresu, numerów PPE, kwot faktur i numerów seryjnych.
 
 ## Stan przepisów i programów (zweryfikowany 11.08.2026)
 
-- **Mój Prąd 6.0** - zamknięty 12.09.2025, wyczerpana pula.
+- **Mój Prąd 6.0** - zamknięty 12.09.2025, wyczerpana pula. Dawał do 7 000 zł na
+  fotowoltaikę i do 16 000 zł na magazyn (połowa jego kosztu), łącznie do 23 000 zł.
+  Warto o tym pamiętać, czytając stare kosztorysy: skoro dotacja na magazyn zależała
+  od jego ceny na fakturze, rozbicie z tamtych dokumentów mówi więcej o programie
+  dofinansowania niż o wartości sprzętu.
 - **Przydomowe Magazyny Energii cz. 1 (KPO)** - nabór 30.03 - 19.06.2026, zamknięty.
   Był zwrotem kosztów instalacji **już wykonanych** (wydatki 1.08.2024 - 31.10.2025),
   do 28 000 zł i do 50% kosztów. Dla decyzji podejmowanej dziś bez znaczenia.
@@ -87,7 +119,12 @@ bez adresu, numerów PPE, kwot faktur i numerów seryjnych.
 - Taryfa PGE Obrót dla grup taryfowych G, zatwierdzona przez Prezesa URE na 2026 r.
 - Wyciąg z Taryfy PGE Dystrybucja S.A. obowiązujący od 1.02.2026 (pkt 7.9, 7.11-7.13)
 - Ceny RCE: API PSE (`api.raporty.pse.pl`)
-- Ceny instalacji: sześć ofert zebranych na tym osiedlu w 2025 r.
+- **Ceny sprzętu**: sklep producenta (sofar-sklep.pl), stan na 14.08.2026. Falownik
+  Sofar HYD8KTL 5 799 zł, jednostka sterująca magazynu 1 299 zł, moduł 5,12 kWh
+  5 299 zł (czyli 1 035 zł/kWh), rozdzielnica AC HydBOX 32A 4 299 zł - wszystko brutto.
+  Do tego narzut na montaż, konstrukcję, zabezpieczenia i zgłoszenie do operatora.
+- **Widełki ofert**: sześć ofert zebranych na tym osiedlu w 2025 r. Służą już tylko jako
+  odniesienie historyczne - dzisiejsza wycena wypada poniżej, bo sprzęt przez rok staniał.
 
 ## Uruchomienie lokalnie
 

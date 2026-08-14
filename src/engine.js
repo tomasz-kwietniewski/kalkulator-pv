@@ -216,6 +216,30 @@ export function symuluj(p, profile) {
 }
 
 /**
+ * Krzywa nasycenia magazynu: jak autokonsumpcja i samowystarczalnosc rosna z pojemnoscia.
+ *
+ * Odpowiada na pytanie, ktorego zadna oferta nie stawia wprost: od ktorego momentu
+ * kolejne kWh magazynu przestaja cokolwiek dawac. Krzywa sie wyplaszcza, bo magazyn
+ * zagospodaruje tylko te nadwyzke, ktora naprawde powstaje w ciagu doby - pojemnosc
+ * ponad dobowa nadwyzke stoi pusta przez wiekszosc roku.
+ *
+ * Kazdy punkt to pelna symulacja 8760 h, wiec wywolanie nie jest darmowe. Wolajacy
+ * decyduje, ile punktow potrzebuje.
+ */
+export function krzywaMagazynu(p, profile, pojemnosci) {
+  return pojemnosci.map((magazynKWh) => {
+    const w = symuluj({ ...p, magazynKWh }, profile);
+    return {
+      magazynKWh,
+      autokonsumpcja: w.autokonsumpcja,
+      samowystarczalnosc: w.samowystarczalnosc,
+      eksportKWh: w.eksportKWh,
+      importKWh: w.importKWh,
+    };
+  });
+}
+
+/**
  * Zaznacza ostatnie K godzin taniej strefy przed kazdym blokiem strefy drogiej.
  * To tam ma sens dobieranie magazynu z sieci - energia jest jeszcze tania, a zaraz
  * bedzie potrzebna. Dopelnianie przez cala tania strefe powodowaloby jalowy obieg.

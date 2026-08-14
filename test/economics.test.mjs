@@ -1,0 +1,228 @@
+/**
+ * Ekonomia inwestycji: rozbicie kosztu na pozycje, rozdzielanie kwoty lacznej z oferty,
+ * kaskada od kwoty z oferty do nakladu realnego i dwa czasy zwrotu.
+ *
+ * Te liczby trafiaja wprost pod decyzje na kilkadziesiat tysiecy zlotych, a wiekszosc
+ * z nich uzytkownik moze sprawdzic na kartce. Jesli suma pol nie zgadza sie z kwota,
+ * ktora sam wpisal, slusznie przestanie ufac calej reszcie.
+ */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { symuluj, krzywaMagazynu } from '../src/engine.js';
+import {
+  CENNIK_ODNIESIENIA, POZYCJE_KOSZTU, pozycjeZCennika, sumaPozycji, rozdzielKwote,
+  kosztInstalacji, ulgaTermomodernizacyjna, kaskadaNakladu, zwrot, zwrotDwutorowo,
+  ULGA, WIDELKI_OFERT_2025, WIDELKI_EPS,
+} from '../src/economics.js';
+
+const profile = JSON.parse(readFileSync(new URL('./profiles_raw.json', import.meta.url)));
+
+test('pozycje z cennika sumuja sie do kosztu instalacji', () => {
+  const cfg = { kWp: 9, magazynKWh: 15, zasilanieAwaryjne: true };
+  const p = pozycjeZCennika(cfg);
+  assert.equal(sumaPozycji(p), kosztInstalacji(cfg));
+
+  assert.equal(p.panele, 9 * CENNIK_ODNIESIENIA.zlZaKWpZPanelami);
+  assert.equal(p.falownik, CENNIK_ODNIESIENIA.falownikHybrydowy);
+  assert.equal(p.magazyn, CENNIK_ODNIESIENIA.magazynBaza + 15 * CENNIK_ODNIESIENIA.magazynZaKWh);
+  assert.equal(p.eps, CENNIK_ODNIESIENIA.zasilanieAwaryjne);
+});
+
+/**
+ * Cennik jest pod klucz, wiec kazda pozycja musi pokryc cene sprzetu ze sklepu
+ * producenta i jeszcze zostawic cos na montaz. Ten test pilnuje, zeby przy kolejnej
+ * aktualizacji cen nie zjechac ponizej samego sprzetu - wtedy kalkulator obiecywalby
+ * instalacje tansza, niz kosztuja same czesci.
+ */
+test('cennik pod klucz pokrywa ceny sprzetu ze sklepu producenta', () => {
+  // Sofar sklep, brutto, sierpien 2026.
+  const SKLEP = { falownik: 5799, bdu: 1299, modul512: 5299, hydbox: 4299, panelZKonstrukcjaZaKWp: 800 };
+
+  assert.ok(CENNIK_ODNIESIENIA.falownikHybrydowy > SKLEP.falownik,
+    'falownik w cenniku nie pokrywa nawet ceny sklepowej');
+  assert.ok(CENNIK_ODNIESIENIA.magazynBaza > SKLEP.bdu);
+  assert.ok(CENNIK_ODNIESIENIA.zlZaKWpZPanelami > SKLEP.panelZKonstrukcjaZaKWp);
+  // Modul 5,12 kWh za 5 299 zl to 1 035 zl/kWh - cennik nie moze zejsc ponizej.
+  assert.ok(CENNIK_ODNIESIENIA.magazynZaKWh > SKLEP.modul512 / 5.12);
+
+  // Magazyn 15 kWh: sklep 1 299 + 3 x 5 299 = 17 196 zl za sam sprzet.
+  const magazynWCenniku = CENNIK_ODNIESIENIA.magazynBaza + 15 * CENNIK_ODNIESIENIA.magazynZaKWh;
+  assert.ok(magazynWCenniku > 17196, `magazyn w cenniku ${magazynWCenniku} zl < 17 196 zl sprzetu`);
+
+  // Zasilanie awaryjne moze byc tansze niz HydBOX, bo istnieja prostsze przelaczniki
+  // (980 zl za reczny), ale nie moze byc absurdalnie niskie.
+  assert.ok(CENNIK_ODNIESIENIA.zasilanieAwaryjne >= 980
+    && CENNIK_ODNIESIENIA.zasilanieAwaryjne <= SKLEP.hydbox + 2000);
+});
+
+/**
+ * Instalacja pod klucz na dom z tego osiedla ma wypasc w przedziale, ktory Tomasz
+ * potwierdzil na cenach sklepowych (40-45 tys. z zasilaniem awaryjnym). Ponizej
+ * widelek z 2025 - i tak ma byc, bo sprzet przez rok stanial.
+ */
+test('calosc dla domu odniesienia miesci sie w dzisiejszych realiach', () => {
+  const razem = kosztInstalacji({ kWp: 9, magazynKWh: 15, zasilanieAwaryjne: true });
+  assert.ok(razem >= 38000 && razem <= 46000, `${razem} zl poza przedzialem 38-46 tys.`);
+  assert.ok(razem < WIDELKI_OFERT_2025.min,
+    'dzisiejsza wycena powinna wypadac ponizej najtanszej oferty z 2025');
+});
+
+test('domyslna cena zasilania awaryjnego miesci sie w widelkach z ofert', () => {
+  assert.ok(CENNIK_ODNIESIENIA.zasilanieAwaryjne >= WIDELKI_EPS.min
+    && CENNIK_ODNIESIENIA.zasilanieAwaryjne <= WIDELKI_EPS.max);
+});
+
+test('bez magazynu i bez EPS te pozycje sa zerowe', () => {
+  const p = pozycjeZCennika({ kWp: 9, magazynKWh: 0, zasilanieAwaryjne: false });
+  assert.equal(p.magazyn, 0);
+  assert.equal(p.eps, 0);
+  assert.ok(p.panele > 0 && p.falownik > 0);
+});
+
+/**
+ * Rozdzielanie kwoty lacznej. Warunek nadrzedny jest jeden: suma pol MUSI rownac sie
+ * kwocie, ktora uzytkownik wpisal - co do zlotowki, niezaleznie od reszt z zaokraglen.
+ */
+test('rozdzielona kwota zawsze sumuje sie do wpisanej', () => {
+  const bazowe = pozycjeZCennika({ kWp: 9, magazynKWh: 15, zasilanieAwaryjne: true });
+  // Kwoty dobrane tak, zeby trafic w reszty niepodzielne przez liczbe pozycji.
+  for (const kwota of [0, 1, 2, 3, 7, 999, 43446, 55208, 68273, 100001, 123457]) {
+    const r = rozdzielKwote(kwota, bazowe);
+    assert.equal(sumaPozycji(r), kwota, `kwota ${kwota} rozjechala sie o ${sumaPozycji(r) - kwota} zl`);
+    POZYCJE_KOSZTU.forEach((k) => assert.ok(r[k] >= 0, `pozycja ${k} wyszla ujemna przy ${kwota} zl`));
+  }
+});
+
+test('rozdzielanie zachowuje proporcje pozycji', () => {
+  const bazowe = { panele: 15480, falownik: 8999, magazyn: 22599, eps: 3500 };
+  const suma = sumaPozycji(bazowe);
+  const r = rozdzielKwote(suma * 2, bazowe);
+  POZYCJE_KOSZTU.forEach((k) => {
+    assert.ok(Math.abs(r[k] - bazowe[k] * 2) <= 1,
+      `pozycja ${k}: ${r[k]} zamiast ok. ${bazowe[k] * 2}`);
+  });
+});
+
+test('rozdzielanie nie ozywia pozycji, ktorych w ofercie nie ma', () => {
+  // Instalacja bez magazynu i bez EPS: podwojenie kwoty nie moze wyczarowac magazynu.
+  const bezMagazynu = { panele: 15480, falownik: 8999, magazyn: 0, eps: 0 };
+  const r = rozdzielKwote(50000, bezMagazynu);
+  assert.equal(r.magazyn, 0);
+  assert.equal(r.eps, 0);
+  assert.equal(sumaPozycji(r), 50000);
+});
+
+test('rozdzielanie z pustych pol wklada calosc w panele', () => {
+  const r = rozdzielKwote(50000, { panele: 0, falownik: 0, magazyn: 0, eps: 0 });
+  assert.equal(r.panele, 50000);
+  assert.equal(sumaPozycji(r), 50000);
+});
+
+/* --- droga od kwoty z oferty do tego, co zostaje w kieszeni --- */
+
+test('ulge liczymy od kwoty juz pomniejszonej o dotacje', () => {
+  // 50 000 zl kosztu, 20 000 zl dotacji, PIT wg skali 12%: podstawa to 30 000, nie 50 000.
+  const k = kaskadaNakladu({ koszt: 50000, dotacja: 20000, stawka: 'skala12' });
+  assert.equal(k.poDotacji, 30000);
+  assert.equal(Math.round(k.ulga), 3600);
+  assert.equal(Math.round(k.naklad), 26400);
+});
+
+test('limit ulgi obowiazuje na podatnika i podwaja sie dla malzonkow', () => {
+  const jeden = ulgaTermomodernizacyjna({ koszt: 90000, stawka: 'skala32', podatnicy: 1 });
+  const dwoje = ulgaTermomodernizacyjna({ koszt: 90000, stawka: 'skala32', podatnicy: 2 });
+  assert.equal(Math.round(jeden), Math.round(ULGA.limitNaPodatnika * 0.32));
+  // Przy dwoch podatnikach limit 106 000 zl przewyzsza koszt, wiec liczy sie caly koszt.
+  assert.equal(Math.round(dwoje), Math.round(90000 * 0.32));
+});
+
+test('bez podatku ulga jest warta zero, a naklad rowna sie kwocie po dotacji', () => {
+  const k = kaskadaNakladu({ koszt: 50000, dotacja: 0, stawka: 'brak' });
+  assert.equal(k.ulga, 0);
+  assert.equal(k.naklad, 50000);
+});
+
+test('dotacja wieksza od kosztu nie robi z nakladu liczby ujemnej', () => {
+  const k = kaskadaNakladu({ koszt: 20000, dotacja: 30000, stawka: 'skala32' });
+  assert.equal(k.dotacja, 20000);
+  assert.equal(k.poDotacji, 0);
+  assert.equal(k.ulga, 0);
+  assert.equal(k.naklad, 0);
+});
+
+/* --- czas zwrotu --- */
+
+test('zwrot od pelnej kwoty nigdy nie jest szybszy niz po odzyskach', () => {
+  const w = zwrotDwutorowo({
+    koszt: 55208, naklad: 38000, oszczednoscRoczna: 6000, wzrostCen: 0.04,
+  });
+  assert.ok(w.odPelnejKwoty.rokZwrotu > w.poOdzyskach.rokZwrotu);
+  // Obie liczby musza byc sensowne, a nie null - przy 6 000 zl rocznie 55 tys. wraca.
+  assert.ok(w.poOdzyskach.rokZwrotu > 0 && w.odPelnejKwoty.rokZwrotu < 20);
+});
+
+test('brak oszczednosci znaczy brak zwrotu, a nie zwrot w roku zerowym', () => {
+  const w = zwrot({ naklad: 50000, oszczednoscRoczna: 0 });
+  assert.equal(w.rokZwrotu, null);
+  assert.ok(w.saldoKoncowe < 0);
+});
+
+test('punkt zwrotu lezy tam, gdzie skumulowany bilans przecina zero', () => {
+  const w = zwrot({ naklad: 50000, oszczednoscRoczna: 5000, wzrostCen: 0, degradacja: 0 });
+  // Bez wzrostu cen i bez degradacji to czysta arytmetyka: 50 000 / 5 000 = 10 lat.
+  assert.ok(Math.abs(w.rokZwrotu - 10) < 1e-9, `wyszlo ${w.rokZwrotu}`);
+  assert.equal(Math.round(w.przeplyw[10]), 0);
+});
+
+/* --- krzywa nasycenia magazynu --- */
+
+test('autokonsumpcja rosnie z pojemnoscia magazynu i sie wyplaszcza', () => {
+  const wspolne = {
+    kWp: 9, orientacja: 'poludnie',
+    zuzycieDomuKWh: profile.meta.zuzycie_domu_kWh,
+    poborAutaKWh: profile.meta.pobor_auta_kWh,
+    // Bez dobierania z sieci, zeby mierzyc sam efekt pojemnosci. Dobieranie nocne
+    // zmienia import, ale jest osobna decyzja o konfiguracji falownika.
+    ladowanieZSieci: false,
+  };
+  const pojemnosci = [0, 5, 10, 15, 20, 25, 30];
+  const krzywa = krzywaMagazynu(wspolne, profile, pojemnosci);
+
+  console.log('\n  magazyn   autokons.  samowyst.   eksport');
+  krzywa.forEach((p) => {
+    console.log(`  ${String(p.magazynKWh).padStart(5)} kWh ${p.autokonsumpcja.toFixed(1).padStart(8)}%`
+      + `${p.samowystarczalnosc.toFixed(1).padStart(10)}% ${p.eksportKWh.toFixed(0).padStart(9)} kWh`);
+  });
+
+  for (let i = 1; i < krzywa.length; i++) {
+    assert.ok(krzywa[i].autokonsumpcja >= krzywa[i - 1].autokonsumpcja,
+      `autokonsumpcja spadla miedzy ${krzywa[i - 1].magazynKWh} a ${krzywa[i].magazynKWh} kWh`);
+    assert.ok(krzywa[i].eksportKWh <= krzywa[i - 1].eksportKWh,
+      `eksport wzrosl miedzy ${krzywa[i - 1].magazynKWh} a ${krzywa[i].magazynKWh} kWh`);
+  }
+  krzywa.forEach((p) => {
+    assert.ok(p.autokonsumpcja >= 0 && p.autokonsumpcja <= 100);
+    assert.ok(p.samowystarczalnosc >= 0 && p.samowystarczalnosc <= 100);
+  });
+
+  // Nasycenie: przyrost z 25 na 30 kWh musi byc wyraznie mniejszy niz z 0 na 5 kWh.
+  const pierwszy = krzywa[1].autokonsumpcja - krzywa[0].autokonsumpcja;
+  const ostatni = krzywa[6].autokonsumpcja - krzywa[5].autokonsumpcja;
+  console.log(`\n  pierwsze 5 kWh daje ${pierwszy.toFixed(1)} pkt proc., `
+    + `ostatnie 5 kWh juz tylko ${ostatni.toFixed(1)}\n`);
+  assert.ok(ostatni < pierwszy / 2,
+    `krzywa sie nie wyplaszcza: pierwszy przyrost ${pierwszy.toFixed(1)}, ostatni ${ostatni.toFixed(1)}`);
+});
+
+test('magazyn zmniejsza eksport, ale nie zmienia produkcji', () => {
+  const wspolne = {
+    kWp: 9, zuzycieDomuKWh: profile.meta.zuzycie_domu_kWh,
+    poborAutaKWh: profile.meta.pobor_auta_kWh, ladowanieZSieci: false,
+  };
+  const bez = symuluj({ ...wspolne, magazynKWh: 0 }, profile);
+  const z = symuluj({ ...wspolne, magazynKWh: 15 }, profile);
+  assert.ok(Math.abs(bez.produkcja - z.produkcja) < 1, 'magazyn nie moze zmieniac produkcji PV');
+  assert.ok(z.eksportKWh < bez.eksportKWh);
+  assert.ok(z.importKWh < bez.importKWh);
+});
