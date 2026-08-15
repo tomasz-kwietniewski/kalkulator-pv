@@ -491,19 +491,18 @@ function rysujPme2(p, pozycje) {
       w pole obok</span>
     </div>
     <div class="ostrzezenie">
-      <b>Uwaga na to, jak ten program działa.</b> Dotacja to procent kosztu magazynu,
-      więc jej wysokość zależy od tego, <b>jak wykonawca rozpisze pozycje na fakturze</b>,
-      a nie od tego, ile naprawdę zapłacisz. Ta sama instalacja za tę samą kwotę łączną
-      potrafi dać zupełnie różną dotację, zależnie od tego, ile z niej przypisano
-      magazynowi - a przypisać można aż do ${zl(PME2.maksKosztZaKWh)} za kWh.
-      U Ciebie magazyn wychodzi <b>${zl(zaKWh)} za kWh</b>, a sam sprzęt tej pojemności
-      kosztuje w sklepie producenta ${zl(sklep.kwota)}
-      (${sklep.modulow} ${sklep.modulow === 1 ? 'moduł' : 'moduły'} po 5,12 kWh,
-      razem ${liczba(sklep.pojemnoscRzeczywista)} kWh).
-      <p style="margin:8px 0 0">Praktycznie: <b>porównuj oferty po kwocie łącznej</b>,
-      bo tylko ją realnie płacisz. Wysoko wyceniony magazyn nie znaczy, że przepłacasz,
-      ale też nie znaczy, że dostajesz więcej sprzętu. A wniosek o dotację składasz Ty
-      i to Ty podpisujesz się pod tym, co jest na fakturze.</p>
+      <b>Jak liczy się ta dotacja.</b> Program dopłaca do <b>pozycji „magazyn"</b>, a nie
+      do całej instalacji. Ta sama inwestycja za tę samą kwotę łączną da więc różną
+      dotację zależnie od tego, ile z niej przypisano magazynowi - a przypisać można
+      aż do ${zl(PME2.maksKosztZaKWh)} za kWh. U Ciebie magazyn wychodzi
+      <b>${zl(zaKWh)} za kWh</b>; sam sprzęt tej pojemności kosztuje w sklepie producenta
+      ${zl(sklep.kwota)} (${sklep.modulow} ${sklep.modulow === 1 ? 'moduł' : 'moduły'}
+      po 5,12 kWh, razem ${liczba(sklep.pojemnoscRzeczywista)} kWh), reszta to montaż,
+      konfiguracja, gwarancja i marża wykonawcy.
+      <p style="margin:8px 0 0"><b>Porównuj oferty po kwocie łącznej</b> - to ona mówi,
+      ile wydasz. I licz się z tym, że tam, gdzie są dopłaty, ceny idą w górę: część
+      dofinansowania zostaje u wykonawcy, a nie u Ciebie. To argument za zebraniem kilku
+      ofert, a nie za rezygnacją z dotacji.</p>
     </div>`;
 }
 
