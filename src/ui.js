@@ -658,7 +658,21 @@ function start() {
     setTimeout(() => { $('btnLink').textContent = 'Skopiuj link z moimi liczbami'; }, 2000);
   });
   // Chart.js rysuje canvas dopiero po ulozeniu strony - przed drukiem wymuszamy odswiezenie.
-  window.addEventListener('beforeprint', odswiezWykresy);
+  // Zwiniete <details> przegladarka pomija na wydruku w calosci, wiec na czas druku
+  // otwieramy je wszystkie i przywracamy stan po. Inaczej ciekawostka o sprzecie z Chin
+  // wraz z ostrzezeniem o pracy off-grid nie trafialaby do PDF-a.
+  window.addEventListener('beforeprint', () => {
+    document.querySelectorAll('details').forEach((d) => {
+      d.dataset.stanPrzedDrukiem = d.open ? '1' : '0';
+      d.open = true;
+    });
+    odswiezWykresy();
+  });
+  window.addEventListener('afterprint', () => {
+    document.querySelectorAll('details').forEach((d) => {
+      if (d.dataset.stanPrzedDrukiem !== undefined) d.open = d.dataset.stanPrzedDrukiem === '1';
+    });
+  });
   przelicz();
 }
 
