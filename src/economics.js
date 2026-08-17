@@ -81,11 +81,12 @@ export const DOTACJE = {
     nazwa: 'Mój Prąd 6.0',
     aktywny: false,
     info: 'Nabór zakończony 12.09.2025 - wyczerpała się pula środków. Dawał do 7 000 zł '
-      + 'na fotowoltaikę i do 16 000 zł na magazyn energii, czyli maksymalnie 23 000 zł, '
-      + 'przy czym dotacja na magazyn liczyła się jako połowa jego kosztu. To dlatego '
-      + 'kosztorysy z tamtego okresu przypisywały magazynowi dużą część kwoty - inaczej '
-      + 'nie dało się sięgnąć po pełne 16 000 zł. Właściciel domu odniesienia zdążył '
-      + 'i z tego dofinansowania skorzystał.',
+      + 'na fotowoltaikę z magazynem, do 16 000 zł na magazyn energii i do 5 000 zł '
+      + 'na magazyn ciepła, przy czym dofinansowanie nie mogło przekroczyć połowy '
+      + 'kosztów kwalifikowanych. Ta konstrukcja tłumaczy, dlaczego kosztorysy z tamtego '
+      + 'okresu przypisywały magazynowi dużą część kwoty: limit na magazyn był ponad dwa '
+      + 'razy wyższy niż na samą fotowoltaikę, a żeby sięgnąć po pełne 16 000 zł, magazyn '
+      + 'musiał być pozycją rzędu 32 000 zł.',
   },
   pme1: {
     nazwa: 'Przydomowe Magazyny Energii, część 1 (KPO)',

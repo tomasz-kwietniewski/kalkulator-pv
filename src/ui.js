@@ -520,8 +520,8 @@ function rysujDotacje(p, w) {
         + 'Warunek: budynek musi być już oddany do użytku (progu wieku nie ma, ale dom '
         + 'w budowie się nie kwalifikuje). Limit 53 000 zł na podatnika, małżonkowie '
         + 'współwłaściciele mają po własnym. Od 2025 katalog obejmuje także magazyny '
-        + 'energii, nie tylko panele. Dotacji i ulgi nie da się rozliczyć z tej samej '
-        + 'złotówki - podstawę pomniejszamy o dotację.'
+        + 'energii, nie tylko panele. Odliczyć można wyłącznie tę część wydatku, którą '
+        + 'pokryłeś z własnych pieniędzy - to, co pokryła dotacja, do ulgi nie wchodzi.'
       : 'nie uwzględniamy jej w wyniku. Odliczenie od dochodu przy zerowym podatku jest warte zero.'}</p>`;
 }
 

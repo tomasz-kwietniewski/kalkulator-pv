@@ -105,15 +105,19 @@ na fakturze. Magazynowi przypisano 32 750 zł, czyli 2 132 zł/kWh, przy cenie t
 zestawu w sklepie producenta ok. 17 200 zł. Odwrotnie niż w cenniku handlowym, gdzie
 magazyn 10 kWh kosztował 15 599 zł, a więc mniej niż połowę.
 
-Powód: Mój Prąd 6.0 dawał **do 7 000 zł na PV i do 16 000 zł na magazyn**, przy czym
-dotacja na magazyn liczyła się jako **50% jego kosztu netto** - widać to wprost w ofercie
-VIMA („cena netto 17 372,94 zł → 8 686,47 zł"). Żeby sięgnąć po pełne 16 000 zł, magazyn
-musiał być na fakturze pozycją rzędu 32 000 zł netto. Stąd te 30 324 zł.
+Powód: Mój Prąd 6.0 dawał **do 7 000 zł na PV z magazynem, do 16 000 zł na magazyn
+energii i do 5 000 zł na magazyn ciepła**, a dofinansowanie nie mogło przekroczyć
+**połowy kosztów kwalifikowanych**. Widać to w ofercie VIMA: magazyn „cena netto
+17 372,94 zł → 8 686,47 zł" (zadziałała połowa kosztu), a PV 7 000 zł przy koszcie
+29 222,30 zł (zadziałał sufit kwotowy). Żeby sięgnąć po pełne 16 000 zł, magazyn musiał
+być na fakturze pozycją rzędu 32 000 zł. Stąd te 30 324 zł.
 **Suma jest wiarygodna, rozbicie nie.** To ma znaczenie, bo cała odpowiedź „czy magazyn
 się zwraca" stoi na tym rozbiciu.
 
-Wcześniejsza wersja README podawała odwrotnie (17 000 na PV, 6 000 na magazyn) -
-poprawione 14.08.2026 na podstawie zasad programu potwierdzonych przez Tomasza.
+Historia poprawek tego akapitu, żeby nie cofnąć go w dobrej wierze: pierwotnie README
+podawało 17 000 na PV i 6 000 na magazyn (błędnie, odwrotnie). Potem opis mówił, że 50%
+dotyczyło wyłącznie magazynu - to też było niepełne. Wersja obecna (15.08.2026): limity
+kwotowe osobno na każdy element, a połowa kosztów jako sufit całości.
 
 Ceny katalogowe zebrane 12.08.2026 ze sklepu producenta (sofar-sklep.pl), brutto:
 

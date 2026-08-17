@@ -92,10 +92,12 @@ bez adresu, numerów PPE, kwot faktur i numerów seryjnych.
 ## Stan przepisów i programów (zweryfikowany 11.08.2026)
 
 - **Mój Prąd 6.0** - zamknięty 12.09.2025, wyczerpana pula. Dawał do 7 000 zł na
-  fotowoltaikę i do 16 000 zł na magazyn (połowa jego kosztu), łącznie do 23 000 zł.
-  Warto o tym pamiętać, czytając stare kosztorysy: skoro dotacja na magazyn zależała
-  od jego ceny na fakturze, rozbicie z tamtych dokumentów mówi więcej o programie
-  dofinansowania niż o wartości sprzętu.
+  fotowoltaikę z magazynem, do 16 000 zł na magazyn energii i do 5 000 zł na magazyn
+  ciepła, przy czym dofinansowanie nie mogło przekroczyć **połowy kosztów
+  kwalifikowanych**. Warto o tym pamiętać, czytając stare kosztorysy: limit na magazyn
+  był ponad dwa razy wyższy niż na fotowoltaikę, a po pełne 16 000 zł dało się sięgnąć
+  dopiero przy magazynie wycenionym na jakieś 32 000 zł. Rozbicie z tamtych dokumentów
+  mówi więc więcej o konstrukcji programu niż o wartości sprzętu.
 - **Przydomowe Magazyny Energii cz. 1 (KPO)** - nabór 30.03 - 19.06.2026, zamknięty.
   Był zwrotem kosztów instalacji **już wykonanych** (wydatki 1.08.2024 - 31.10.2025),
   do 28 000 zł i do 50% kosztów. Dla decyzji podejmowanej dziś bez znaczenia.
