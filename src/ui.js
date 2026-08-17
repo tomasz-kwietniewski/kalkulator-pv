@@ -247,6 +247,10 @@ function rysujTaryfy(p) {
     return rachunekRoczny(w, profile, g, { rce, dynamiczna, netBilling: p.kWp > 0 }).brutto;
   };
 
+  // Wariant dynamiczny liczymy na harmonogramie G12w: magazyn pracuje wedlug stref,
+  // a rozliczenie idzie po cenach gieldowych. To celowo ostrozne zalozenie - odpowiada
+  // zwyklemu falownikowi z Time of Use, a nie takiemu, ktory sam sledzi ceny godzinowe.
+  // Drogie godziny na gieldzie i tak wypadaja w oknach zblizonych do stref taryfowych.
   const wszystkie = [
     ...['G11', 'G12', 'G12w'].map((g) => ({ g, brutto: policz(g, false) })),
     { g: 'dynamiczna', brutto: policz('G12w', true) },
@@ -260,10 +264,13 @@ function rysujTaryfy(p) {
     ${p.grupa !== naj.g ? `Zmiana taryfy dałaby <b>${zl(wszystkie.find((x) => x.g === p.grupa).brutto - naj.brutto)}</b> rocznie bez żadnej inwestycji.` : 'Masz już wybraną najtańszą.'}
     <br><span style="font-size:12.5px;color:var(--faint)">Taryfa dynamiczna liczona bez „Tarczy" -
     czapka cenowa wygasa z końcem 2026 i zakładamy, że nie zostanie przedłużona.
-    Żeby na niej realnie zarobić, falownik musi umieć reagować na ceny godzinowe:
-    ładować, gdy prąd jest tani, i oddawać, gdy drogi. Część systemów robi to sama,
-    przy innych trzeba dołożyć zewnętrzną automatykę - warto o to zapytać, zanim
-    zmienisz taryfę.</span>`;
+    Wynik zakłada zwykłą pracę magazynu według harmonogramu stref, bez reagowania na
+    bieżące ceny - drogie godziny na giełdzie i tak wypadają w powtarzalnych oknach,
+    podobnych do stref G12w. Zimą ta taryfa niewiele różni się od strefowej, bo w drogich
+    godzinach ceny bywają wtedy bardzo wysokie; więcej daje latem, gdy tanich godzin
+    jest wyraźnie więcej niż w taryfie dwustrefowej. Falownik sterujący się cenami
+    godzinowymi wyciągnie z niej jeszcze trochę, ale to ma znaczenie głównie przy
+    ładowaniu auta, które da się swobodnie przesuwać w dobie.</span>`;
 }
 
 /* --- sekcja 4: co daje magazyn --------------------------------------------------- */
