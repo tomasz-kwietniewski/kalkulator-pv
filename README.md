@@ -161,9 +161,17 @@ obsługiwanych magazynów jest krótka**. Na 17.08.2026 są na niej **Sigenergy 
 
 Dlatego właściciel domu odniesienia **zrezygnował z taryfy dynamicznej i został przy
 G12w**. Nie dlatego, że automatyczny handel energią nie działa, tylko dlatego, że
-**jego falownik Sofar nie jest obsługiwany** - a bez tego zostaje ręczne ustawianie
-stref, czyli w praktyce to samo, co daje zwykła taryfa dwustrefowa. To decyzja do
-rewizji, gdy lista integracji się poszerzy.
+**jego falownik Sofar nie jest obsługiwany**. To decyzja do rewizji, gdy lista
+integracji się poszerzy.
+
+Da się to obejść własnymi rękami: falownik Sofar ma tryb, w którym można ustawić
+harmonogram pracy, a resztę dołożyć automatyką w Home Assistant. Tylko że to nie jest
+rozwiązanie dla każdego - dużo konfigurowania, a potem utrzymywanie tego, sprawdzanie,
+czy naprawdę robi to, co miało robić, i poprawianie, gdy coś się zmieni. Właściciel domu
+odniesienia napisał sobie taką automatykę **tylko do ładowarki samochodu**, żeby ładować
+nadwyżkami ze słońca: tam zysk był na tyle duży i klarowny, że praca się zwróciła.
+Przy samym magazynie uznał, że woli rozwiązanie działające bez dłubania - i to jest
+uczciwe założenie także dla kogoś, kto czyta ten kalkulator.
 
 Wniosek praktyczny dla kogoś, kto dopiero wybiera: **jeśli myślisz o taryfie dynamicznej,
 sprawdź listę obsługiwanych urządzeń, zanim wybierzesz falownik** - a nie odwrotnie.
