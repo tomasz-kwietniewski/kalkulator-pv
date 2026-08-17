@@ -155,9 +155,14 @@ Taka usługa już istnieje - Pstryk sprzedaje ją jako **Pstryk Connect** za 30 
 miesięcznie od domu (pierwsze trzy miesiące bez opłaty). Opisuje ją tak: „Pstryk zarządza
 magazynem analizując ceny i Twój profil zużycia, by automatycznie kupować tani prąd
 i sprzedawać nadwyżki z zyskiem jeśli masz PV". Problem jest gdzie indziej: **lista
-obsługiwanych magazynów jest krótka**. Na 17.08.2026 są na niej **Sigenergy i Solax**
-(ten drugi wymaga dedykowanego klucza API), a dla pozostałych marek pozostaje przycisk
-„Zaproponuj integrację".
+obsługiwanych magazynów jest krótka**.
+
+Widać to po proporcjach (stan na 17.08.2026, źródło: aplikacja Pstryka). Ładowarek
+samochodowych obsługuje osiemnaście marek, między innymi Easee, Wallbox, Teslę, Kebę,
+Zaptec i Myenergi. **Magazynów energii - dwie: Sigenergy i Solax** (ten drugi przez
+dedykowany klucz API). Pomp ciepła - jedną. Sterowanie samym samochodem jest zapowiadane
+jako „już wkrótce". Innymi słowy: przy ładowarkach ta usługa jest dojrzała, przy
+magazynach dopiero raczkuje, choć lista sukcesywnie rośnie.
 
 Dlatego właściciel domu odniesienia **zrezygnował z taryfy dynamicznej i został przy
 G12w**. Nie dlatego, że automatyczny handel energią nie działa, tylko dlatego, że
