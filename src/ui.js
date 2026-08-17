@@ -259,7 +259,11 @@ function rysujTaryfy(p) {
     Pozostałe: ${wszystkie.slice(1).map((x) => `${nazwy[x.g]} ${zl(x.brutto)}`).join(', ')}.
     ${p.grupa !== naj.g ? `Zmiana taryfy dałaby <b>${zl(wszystkie.find((x) => x.g === p.grupa).brutto - naj.brutto)}</b> rocznie bez żadnej inwestycji.` : 'Masz już wybraną najtańszą.'}
     <br><span style="font-size:12.5px;color:var(--faint)">Taryfa dynamiczna liczona bez „Tarczy" -
-    czapka cenowa wygasa z końcem 2026 i zakładamy, że nie zostanie przedłużona.</span>`;
+    czapka cenowa wygasa z końcem 2026 i zakładamy, że nie zostanie przedłużona.
+    Żeby na niej realnie zarobić, falownik musi umieć reagować na ceny godzinowe:
+    ładować, gdy prąd jest tani, i oddawać, gdy drogi. Część systemów robi to sama,
+    przy innych trzeba dołożyć zewnętrzną automatykę - warto o to zapytać, zanim
+    zmienisz taryfę.</span>`;
 }
 
 /* --- sekcja 4: co daje magazyn --------------------------------------------------- */
