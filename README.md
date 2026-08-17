@@ -151,12 +151,22 @@ zakup, tylko **sprzedawanie nadwyżek wtedy, gdy są drogie**, zamiast w połudn
 świeci pełne słońce i energia w sieci jest warta najmniej albo nic. Wymaga to falownika,
 który sam handluje: trzyma energię w magazynie i oddaje ją w drogich godzinach.
 
-Na polskim rynku to na razie nisza. SigEnergy reklamuje taką współpracę wprost, a Pstryk
-ma usługę **Pstryk Connect** - ale automatyczne sterowanie magazynami jest tam na dziś
-opisane jako funkcja zapowiadana („już wkrótce"), a nie działająca (stan: 17.08.2026).
+Taka usługa już istnieje - Pstryk sprzedaje ją jako **Pstryk Connect** za 30 zł
+miesięcznie od domu (pierwsze trzy miesiące bez opłaty). Opisuje ją tak: „Pstryk zarządza
+magazynem analizując ceny i Twój profil zużycia, by automatycznie kupować tani prąd
+i sprzedawać nadwyżki z zyskiem jeśli masz PV". Problem jest gdzie indziej: **lista
+obsługiwanych magazynów jest krótka**. Na 17.08.2026 są na niej **Sigenergy i Solax**
+(ten drugi wymaga dedykowanego klucza API), a dla pozostałych marek pozostaje przycisk
+„Zaproponuj integrację".
+
 Dlatego właściciel domu odniesienia **zrezygnował z taryfy dynamicznej i został przy
-G12w**: bez sprzętu, który potrafi tę taryfę obsłużyć, nie ma czym zagospodarować jej
-przewagi. To decyzja do rewizji, gdy producenci nadrobią oprogramowanie.
+G12w**. Nie dlatego, że automatyczny handel energią nie działa, tylko dlatego, że
+**jego falownik Sofar nie jest obsługiwany** - a bez tego zostaje ręczne ustawianie
+stref, czyli w praktyce to samo, co daje zwykła taryfa dwustrefowa. To decyzja do
+rewizji, gdy lista integracji się poszerzy.
+
+Wniosek praktyczny dla kogoś, kto dopiero wybiera: **jeśli myślisz o taryfie dynamicznej,
+sprawdź listę obsługiwanych urządzeń, zanim wybierzesz falownik** - a nie odwrotnie.
 
 ## Źródła stawek
 
