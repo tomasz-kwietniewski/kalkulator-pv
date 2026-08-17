@@ -133,6 +133,31 @@ bez adresu, numerów PPE, kwot faktur i numerów seryjnych.
   do konta w miesiącu następnym (przepis od 1.02.2025). Środki można rozliczać przez
   12 miesięcy, niewykorzystana nadwyżka wraca do 20% wartości depozytu miesięcznego.
 
+## Taryfa dynamiczna: co kalkulator zakłada i czego jeszcze nie ma na rynku
+
+Wariant dynamiczny liczymy **na harmonogramie stref G12w**: magazyn pracuje według
+z góry ustawionych okien, a rozliczenie idzie po cenach giełdowych. To celowo ostrożne
+założenie, odpowiadające zwykłemu falownikowi z trybem Time of Use, a nie takiemu, który
+sam śledzi ceny godzinowe. Drogie godziny na giełdzie i tak wypadają w powtarzalnych
+oknach, zbliżonych do stref taryfowych, więc dla domu bez samochodu elektrycznego to
+przybliżenie jest uczciwe.
+
+Zimą ta taryfa niewiele różni się od strefowej, bo w drogich godzinach ceny bywają
+wtedy bardzo wysokie. Więcej daje latem, gdy tanich godzin jest wyraźnie więcej niż
+w taryfie dwustrefowej.
+
+**Czego brakuje, żeby wycisnąć z niej resztę.** Największa wartość dodana to nie tańszy
+zakup, tylko **sprzedawanie nadwyżek wtedy, gdy są drogie**, zamiast w południe, gdy
+świeci pełne słońce i energia w sieci jest warta najmniej albo nic. Wymaga to falownika,
+który sam handluje: trzyma energię w magazynie i oddaje ją w drogich godzinach.
+
+Na polskim rynku to na razie nisza. SigEnergy reklamuje taką współpracę wprost, a Pstryk
+ma usługę **Pstryk Connect** - ale automatyczne sterowanie magazynami jest tam na dziś
+opisane jako funkcja zapowiadana („już wkrótce"), a nie działająca (stan: 17.08.2026).
+Dlatego właściciel domu odniesienia **zrezygnował z taryfy dynamicznej i został przy
+G12w**: bez sprzętu, który potrafi tę taryfę obsłużyć, nie ma czym zagospodarować jej
+przewagi. To decyzja do rewizji, gdy producenci nadrobią oprogramowanie.
+
 ## Źródła stawek
 
 - Taryfa PGE Obrót dla grup taryfowych G, zatwierdzona przez Prezesa URE na 2026 r.
