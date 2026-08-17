@@ -413,7 +413,10 @@
       <span class="hint">Ile pojemności stoi zaparkowane na wypadek awarii.</span></label>
       <input type="number" id="rezerwa" value="20" min="0" max="50" step="5"></div>
     <div><label for="dobieranie">Dobieranie magazynu z sieci nocą
-      <span class="hint">Wymaga skonfigurowania falownika.</span></label>
+      <span class="hint">Falownik dokupuje tanią energię pod koniec nocnej strefy, żeby
+      w drogich godzinach dom brał z magazynu zamiast z sieci. Zimą to główny sposób
+      obniżania rachunku, bo panele dają wtedy za mało, żeby magazyn naładować.
+      Wymaga skonfigurowania falownika - domyślnie po montażu tego nie ma.</span></label>
       <select id="dobieranie"><option value="1" selected>Tak</option><option value="0">Nie</option></select></div>
     <div><label for="podatnicy">Liczba podatników (limit ulgi)
       <span class="hint">Małżonkowie współwłaściciele mają po własnym limicie 53 000 zł.</span></label>
@@ -458,12 +461,12 @@
     <div class="prog">
       <div class="kto">Czego to nie zastąpi</div>
       <h4>Praca całkowicie poza siecią</h4>
-      <p>Nawet pełny backup nie znaczy, że dom pociągnie zimą bez sieci. Pompy ciepła przy
-      mrozie biorą więcej, niż magazyn odda przez noc, a produkcja PV w grudniu jest ułamkiem
-      letniej.</p>
+      <p>Nawet pełny backup nie utrzyma domu przez dłuższą awarię zimą. W mróz same pompy
+      ciepła zużywają w ciągu doby więcej, niż mieści cały magazyn, a grudniowa produkcja
+      z paneli jest ułamkiem letniej - więc w ciągu dnia nie ma go czym uzupełnić.</p>
       <ul>
         <li>To zabezpieczenie na godziny, nie na tygodnie</li>
-        <li>Zimą magazyn wystarczy najkrócej</li>
+        <li>Wystarcza najkrócej właśnie zimą, gdy awarie zdarzają się najczęściej</li>
       </ul>
     </div>
   </div>
@@ -475,8 +478,9 @@
     <p><b>Obwód awaryjny ma własne zabezpieczenie.</b> W domu odniesienia pobór urywa się przy
     ok. 3,6 kW, co odpowiada bezpiecznikowi 16 A. To ograniczenie rozdzielnicy, nie sprzętu
     za kilkadziesiąt tysięcy - i właśnie to kupuje się, dopłacając do wariantu z pełną rozdzielnicą.</p>
-    <p><b>Magazyn nie odda całej pojemności.</b> Rezerwa awaryjna to u sąsiada realnie 20%
-    pojemności, która nigdy nie pracuje na autokonsumpcję. Kalkulator to uwzględnia.</p>
+    <p><b>Magazyn nie odda całej pojemności.</b> Rezerwa awaryjna to w domu odniesienia
+    realnie 20% pojemności, która nigdy nie pracuje na autokonsumpcję. Kalkulator to
+    uwzględnia.</p>
     <p><b>Przełącznik reaguje na zanik sieci, a nie na słabą sieć.</b> Przy niskim, ale
     obecnym napięciu typowa puszka EPS nie przełączy na magazyn, bo prąd formalnie jest.
     Jeśli zależy Ci na reakcji także w takiej sytuacji, trzeba o to zapytać osobno - to nie
@@ -507,14 +511,17 @@
     <div class="prog">
       <div class="kto">Sam składasz</div>
       <h4>Komponenty z Chin</h4>
-      <p>Panele, falownik i baterie kupowane osobno z platform typu Alibaba czy AliExpress,
-      montaż własny albo przez znalezionego elektryka.</p>
+      <p>Sprzęt z platform typu Alibaba czy AliExpress - często u jednego sprzedawcy,
+      także jako gotowa kolumna z falownikiem i magazynem w jednej obudowie. Montaż
+      własny albo przez znalezionego elektryka.</p>
       <ul>
         <li>Najniższy koszt sprzętu, o ile nie doliczyć własnej pracy</li>
-        <li>Gwarancja rozproszona na kilku sprzedawców, część z nich poza Unią</li>
+        <li>Gwarancję dostajesz od sprzedawcy, ale dochodzisz jej u niego, a nie
+        u instalatora za rogiem - przy sprzęcie ważącym ponad 200 kg to różnica</li>
         <li>Serwis i części zamienne na własną rękę</li>
         <li>Zgłoszenie do operatora i odbiór instalacji po Twojej stronie</li>
-        <li>Trzeba samemu sprawdzić, czy falownik jest na liście dopuszczonych przez OSD</li>
+        <li>Trzeba samemu sprawdzić, czy falownik jest dopuszczony przez operatora
+        i czy w ogóle umie pracować z siecią, a nie tylko wyspowo</li>
       </ul>
     </div>
     <div class="prog">
@@ -631,7 +638,8 @@
     Samo wejście na stronę zostawia oczywiście adres IP w logach hostingu, jak na każdej
     stronie w internecie.</p>
   </div>
-  <p>Profil pochodzi z <b>jednego konkretnego domu</b>: 125 m², drewniany szkieletowy,
+  <p>Profil pochodzi z <b>jednego konkretnego domu</b>, nazywanego w tekście
+  <b>domem odniesienia</b>: 125 m², drewniany szkieletowy,
   w pełni elektryczny, ogrzewany dwiema pompami ciepła powietrze-powietrze, PV 9 kWp
   i magazyn 15 kWh. Rok pomiarów od sierpnia 2025 do lipca 2026, próbkowanie co 5 minut,
   pokrycie 99,3%.</p>
