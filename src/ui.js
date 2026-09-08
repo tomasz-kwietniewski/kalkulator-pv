@@ -13,7 +13,8 @@ import { parsujTekst, proponujKolumny, zbudujProfil, BladImportu } from './impor
 import { DOMY, profilZuzycia, opisDomu } from './domy.js';
 import {
   pozycjeZCennika, sumaPozycji, rozdzielKwote, POZYCJE_KOSZTU,
-  kaskadaNakladu, zwrot, zwrotDwutorowo, dotacjaPME2, cenaSklepowaMagazynu, pojemnoscModulowa,
+  kaskadaNakladu, zwrot, zwrotDwutorowo, dotacjaPME2, cenaSklepowaMagazynu,
+  pojemnoscModulowa, MODULY_MAGAZYNU, MODUL_DOMYSLNY,
   WIDELKI_OFERT_2025, WIDELKI_EPS, WIDELKI_RYNKOWE, widelkiRynkowe, DOTACJE, PME2,
 } from './economics.js';
 import {
@@ -69,7 +70,7 @@ const POLE_POZYCJI = {
 };
 
 const POLA = ['ogrzewanie', 'zuzycie', 'auto', 'lokalizacja', 'orientacja', 'nachylenie', 'kwp', 'magazyn',
-  'operator', 'grupa', 'eps',
+  'modul', 'operator', 'grupa', 'eps',
   'kosztPanele', 'kosztFalownik', 'kosztMagazyn', 'kosztEps', 'koszt',
   'dotacja', 'pit', 'wzrostCen', 'rezerwa', 'dobieranie', 'podatnicy',
   'mocAwaria', 'limitEps'];
@@ -98,8 +99,10 @@ function czytajPola() {
   const orientacja = $('orientacja').value;
   const nachylenie = +$('nachylenie').value;
   const grupa = $('grupa').value;
+  const modulKWh = +$('modul').value;
   return {
     operator,
+    modulKWh,
     zuzycieDomuKWh: +$('zuzycie').value,
     poborAutaKWh: +$('auto').value * KWH_NA_KM,
     lokalizacja,
@@ -118,9 +121,10 @@ function czytajPola() {
     },
     wlasnyProfil: !!profilWlasny,
     kWp: +$('kwp').value,
-    // Magazyn kupuje sie modulami po 5,12 kWh, wiec suwak zaokragla sie w gore do calego
-    // modulu - i tak liczymy zarowno koszt, jak i prace magazynu.
-    magazynKWh: pojemnoscModulowa(+$('magazyn').value),
+    // Magazyn kupuje sie w calych modulach, a ich rozmiar zalezy od producenta - stad
+    // wybor w parametrach zaawansowanych. Zaokraglona pojemnosc idzie i w koszt,
+    // i w prace magazynu; przy "dowolnej" nie zaokraglamy wcale.
+    magazynKWh: pojemnoscModulowa(+$('magazyn').value, modulKWh),
     grupa,
     dynamiczna: grupa === 'dynamiczna',
     grupaRozliczen: grupa === 'dynamiczna' ? 'G12w' : grupa,
@@ -154,7 +158,9 @@ function obsluzKoszt(id, p) {
   if (id === 'koszt') {
     const wzorzec = (proporcjeKosztu && sumaPozycji(proporcjeKosztu) > 0)
       ? proporcjeKosztu
-      : pozycjeZCennika({ kWp: p.kWp, magazynKWh: p.magazynKWh, zasilanieAwaryjne: p.eps });
+      : pozycjeZCennika({
+        kWp: p.kWp, magazynKWh: p.magazynKWh, zasilanieAwaryjne: p.eps, modulKWh: p.modulKWh,
+      });
     const nowe = rozdzielKwote(+$('koszt').value, wzorzec);
     POZYCJE_KOSZTU.forEach((k) => { $(POLE_POZYCJI[k]).value = nowe[k]; });
   } else {
@@ -322,7 +328,7 @@ function przelicz() {
   // Dopoki uzytkownik nie wpisal wlasnych kwot, pozycje ida z cennika odniesienia.
   if (!kosztRecznie) {
     zapiszPozycje(pozycjeZCennika({
-      kWp: p.kWp, magazynKWh: p.magazynKWh, zasilanieAwaryjne: p.eps,
+      kWp: p.kWp, magazynKWh: p.magazynKWh, zasilanieAwaryjne: p.eps, modulKWh: p.modulKWh,
     }));
   } else if (!p.eps) {
     $('kosztEps').value = 0;
@@ -824,8 +830,9 @@ function odtworzZAdresu() {
     // Starsze linki maja tylko kwote laczna - rozdzielamy ja na pozycje wedlug cennika.
     if (sumaPozycji(pozycje) === 0) {
       const wzorzec = pozycjeZCennika({
-        kWp: +$('kwp').value, magazynKWh: pojemnoscModulowa(+$('magazyn').value),
-        zasilanieAwaryjne: $('eps').checked,
+        kWp: +$('kwp').value,
+        magazynKWh: pojemnoscModulowa(+$('magazyn').value, +$('modul').value),
+        zasilanieAwaryjne: $('eps').checked, modulKWh: +$('modul').value,
       });
       const nowe = rozdzielKwote(+par.get('koszt'), wzorzec);
       POZYCJE_KOSZTU.forEach((k) => { $(POLE_POZYCJI[k]).value = nowe[k]; });
@@ -882,6 +889,9 @@ function wypelnijListy() {
   }).join('');
   $('ogrzewanie').innerHTML = DOMY
     .map((d) => `<option value="${d.id}">${d.nazwa}</option>`).join('');
+  $('modul').innerHTML = MODULY_MAGAZYNU
+    .map((m) => `<option value="${m.kWh}"${m.kWh === MODUL_DOMYSLNY ? ' selected' : ''}>`
+      + `${m.etykieta}</option>`).join('');
   $('nachylenie').innerHTML = NACHYLENIA
     .map((n) => `<option value="${n}"${n === 35 ? ' selected' : ''}>${n}°</option>`).join('');
 }
@@ -895,6 +905,15 @@ function opiszLokalizacje(id) {
 }
 
 /** Ksztalt zuzycia z pliku uzytkownika przykrywa archetyp - trzeba to powiedziec wprost. */
+/** Podpowiedz przy suwaku zalezy od tego, jak duze moduly wybrano. */
+function opiszMagazyn() {
+  const modul = +$('modul').value;
+  $('magazynHint').textContent = modul > 0
+    ? `Pojemność nominalna z oferty. Moduły po ${liczba(modul)} kWh, więc suwak zaokrągla`
+      + ' w górę do całego modułu - rozmiar zmienisz w parametrach zaawansowanych.'
+    : 'Pojemność nominalna z oferty. Liczymy dokładnie tyle, ile ustawisz.';
+}
+
 function opiszOgrzewanie() {
   $('ogrzewanieHint').textContent = profilWlasny
     ? 'Liczymy na Twoim pliku z licznika, więc ten wybór nic teraz nie zmienia.'
@@ -905,6 +924,7 @@ function start() {
   wypelnijListy();
   odtworzZAdresu();
   opiszLokalizacje($('lokalizacja').value);
+  opiszMagazyn();
   opiszOgrzewanie();
   dopasujTaryfyDoOperatora();
   POLA.forEach((id) => {
@@ -914,10 +934,11 @@ function start() {
       // Zmiana mocy, pojemnosci albo zasilania awaryjnego zmienia to, co jest w ofercie,
       // wiec wracamy do cennika - inaczej kwota z poprzedniej konfiguracji zostalaby
       // przypisana do nowej i cicho zafalszowala zwrot.
-      if (['kwp', 'magazyn', 'eps'].includes(id)) kosztRecznie = false;
+      if (['kwp', 'magazyn', 'modul', 'eps'].includes(id)) kosztRecznie = false;
       if (id === 'operator') dopasujTaryfyDoOperatora();
       if (id === 'lokalizacja') opiszLokalizacje($('lokalizacja').value);
       if (id === 'ogrzewanie') opiszOgrzewanie();
+      if (id === 'modul') opiszMagazyn();
       przelicz();
     });
   });

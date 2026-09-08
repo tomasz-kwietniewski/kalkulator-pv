@@ -14,7 +14,7 @@ import {
   CENNIK_ODNIESIENIA, POZYCJE_KOSZTU, pozycjeZCennika, sumaPozycji, rozdzielKwote,
   kosztInstalacji, ulgaTermomodernizacyjna, kaskadaNakladu, zwrot, zwrotDwutorowo,
   ULGA, WIDELKI_OFERT_2025, WIDELKI_EPS, PME2, dotacjaPME2, cenaSklepowaMagazynu,
-  widelkiRynkowe, pojemnoscModulowa,
+  widelkiRynkowe, pojemnoscModulowa, MODULY_MAGAZYNU, MODUL_DOMYSLNY,
 } from '../src/economics.js';
 
 const profile = JSON.parse(readFileSync(new URL('./profiles_raw.json', import.meta.url)));
@@ -24,12 +24,18 @@ test('pozycje z cennika sumuja sie do kosztu instalacji', () => {
   const p = pozycjeZCennika(cfg);
   assert.equal(sumaPozycji(p), kosztInstalacji(cfg));
 
-  assert.equal(p.panele, 9 * CENNIK_ODNIESIENIA.zlZaKWpZPanelami);
-  assert.equal(p.falownik, CENNIK_ODNIESIENIA.falownikHybrydowy);
+  // Ceny z cennika sa szacunkiem i wychodza zaokraglone do stu zlotych - kwota
+  // w rodzaju "18 896 zl" udawalaby precyzje, ktorej nie ma.
+  const doStu = (v) => Math.round(v / 100) * 100;
+  assert.equal(p.panele, doStu(9 * CENNIK_ODNIESIENIA.zlZaKWpZPanelami));
+  assert.equal(p.falownik, doStu(CENNIK_ODNIESIENIA.falownikHybrydowy));
   // 15 kWh to trzy moduly po 5,12, czyli placi sie za 15,36 kWh
   assert.equal(p.magazyn,
-    Math.round(CENNIK_ODNIESIENIA.magazynBaza + 15.36 * CENNIK_ODNIESIENIA.magazynZaKWh));
-  assert.equal(p.eps, CENNIK_ODNIESIENIA.zasilanieAwaryjne);
+    doStu(CENNIK_ODNIESIENIA.magazynBaza + 15.36 * CENNIK_ODNIESIENIA.magazynZaKWh));
+  assert.equal(p.eps, doStu(CENNIK_ODNIESIENIA.zasilanieAwaryjne));
+  for (const kwota of Object.values(p)) {
+    assert.equal(kwota % 100, 0, `${kwota} nie jest zaokraglone do stu zlotych`);
+  }
 });
 
 /**
@@ -348,6 +354,26 @@ test('cennik nie moze wycenic magazynu taniej niz sam sprzet w sklepie', () => {
     assert.ok(nasz > sklep,
       `${kWh} kWh: cennik ${nasz} zl nie pokrywa nawet sprzetu za ${sklep} zl`);
   }
+});
+
+test('rozmiar modulu jest parametrem, bo kazdy producent ma swoj', () => {
+  // Sofar, Deye i GoodWe maja 5,12 kWh, Huawei 5, Pylontech 4,8, BYD 2,56.
+  assert.equal(pojemnoscModulowa(13, 5.12), 15.36);
+  assert.equal(pojemnoscModulowa(13, 5), 15);
+  assert.equal(pojemnoscModulowa(13, 2.56), 15.36);
+  assert.equal(pojemnoscModulowa(13, 6.1), 18.3);
+  // zero znaczy "dowolna pojemnosc" - dla ofert podanych jedna liczba
+  assert.equal(pojemnoscModulowa(13, 0), 13);
+  assert.equal(pojemnoscModulowa(0, 5.12), 0);
+
+  const zSofarem = pozycjeZCennika({ kWp: 0, magazynKWh: 13, modulKWh: 5.12 }).magazyn;
+  const zHuawei = pozycjeZCennika({ kWp: 0, magazynKWh: 13, modulKWh: 5 }).magazyn;
+  const dowolna = pozycjeZCennika({ kWp: 0, magazynKWh: 13, modulKWh: 0 }).magazyn;
+  assert.ok(zSofarem > zHuawei && zHuawei > dowolna, `${zSofarem} / ${zHuawei} / ${dowolna}`);
+
+  assert.ok(MODULY_MAGAZYNU.length >= 5, 'lista modulow ma pokrywac popularne marki');
+  assert.equal(MODULY_MAGAZYNU[0].kWh, 0, 'pierwsza opcja to dowolna pojemnosc');
+  assert.equal(MODUL_DOMYSLNY, 5.12);
 });
 
 test('nietypowa pojemnosc kosztuje tyle, co kupione moduly', () => {

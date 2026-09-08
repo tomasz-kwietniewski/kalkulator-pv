@@ -117,10 +117,11 @@ export function widelkiRynkowe({ kWp = 0, magazynKWh = 0 } = {}) {
     ? magazynKWh * WIDELKI_RYNKOWE.magazynZaKWh[granica] + WIDELKI_RYNKOWE.montazMagazynu[montaz]
     : 0);
 
+  const doStu = (v) => Math.round(v / 100) * 100;
   return {
-    min: Math.round(naKrancu('min') + magazyn('min', 'min')),
-    max: Math.round(naKrancu('max') + magazyn('max', 'max')),
-    typowa: Math.round((naKrancu('min') + naKrancu('max')) / 2
+    min: doStu(naKrancu('min') + magazyn('min', 'min')),
+    max: doStu(naKrancu('max') + magazyn('max', 'max')),
+    typowa: doStu((naKrancu('min') + naKrancu('max')) / 2
       + (magazynKWh > 0
         ? magazynKWh * WIDELKI_RYNKOWE.magazynZaKWh.srednia
           + (WIDELKI_RYNKOWE.montazMagazynu.min + WIDELKI_RYNKOWE.montazMagazynu.max) / 2
@@ -237,15 +238,41 @@ export const SKLEP_SOFAR = {
  * i przy nietypowych pojemnosciach wychodzil tanszy niz sam sprzet.
  */
 /**
- * Pojemnosc zaokraglona w gore do calych modulow. Polowy modulu nie da sie kupic:
- * przy suwaku na 13 kWh do domu przyjezdzaja trzy moduly po 5,12 kWh, czyli 15,36 kWh -
- * i tyle trzeba zaplacic. Liczenie liniowe dawalo tu cene ponizej ceny samego sprzetu
- * w sklepie producenta (16 300 zl wobec 17 196 zl), czyli zanizalo czas zwrotu.
+ * Wielkosci modulow spotykane na rynku. Magazyn kupuje sie w calych modulach, ale ich
+ * pojemnosc zalezy od producenta: 2,56 kWh (BYD, czesc FoxESS), 3,2 (Sungrow SBR),
+ * 4,8 (Pylontech US5000), 5,0 (Huawei LUNA2000), 5,12 (Sofar, Deye, GoodWe Lynx),
+ * 6,1 (czesc serii GoodWe i Deye). Domyslnie 5,12 kWh, bo tyle ma dom odniesienia
+ * i bo to najczestszy rozmiar modulu LFP (100 Ah przy 51,2 V).
+ *
+ * Zero znaczy "dowolna pojemnosc" - dla ofert, w ktorych sprzedawca podaje jedna liczbe
+ * i nie wiadomo, z czego jest zlozona.
  */
-export function pojemnoscModulowa(kWh) {
+export const MODULY_MAGAZYNU = [
+  { kWh: 0, etykieta: 'Dowolna pojemność (bez zaokrąglania)' },
+  { kWh: 2.56, etykieta: '2,56 kWh (BYD HVS, część FoxESS)' },
+  { kWh: 3.2, etykieta: '3,2 kWh (Sungrow SBR)' },
+  { kWh: 4.8, etykieta: '4,8 kWh (Pylontech US5000)' },
+  { kWh: 5, etykieta: '5 kWh (Huawei LUNA2000)' },
+  { kWh: 5.12, etykieta: '5,12 kWh (Sofar, Deye, GoodWe Lynx)' },
+  { kWh: 6.1, etykieta: '6,1 kWh (część serii GoodWe i Deye)' },
+];
+
+export const MODUL_DOMYSLNY = SKLEP_SOFAR.pojemnoscModulu;
+
+/**
+ * Pojemnosc zaokraglona w gore do calych modulow. Polowy modulu nie da sie kupic:
+ * przy suwaku na 13 kWh i modulach po 5,12 kWh do domu przyjezdzaja trzy, czyli
+ * 15,36 kWh - i tyle trzeba zaplacic. Liczenie liniowe dawalo tu cene ponizej ceny
+ * samego sprzetu w sklepie producenta (16 300 zl wobec 17 196 zl), czyli zanizalo
+ * czas zwrotu.
+ *
+ * Rozmiar modulu jest parametrem, bo rozni producenci maja rozny - przy `modulKWh = 0`
+ * nie zaokraglamy w ogole.
+ */
+export function pojemnoscModulowa(kWh, modulKWh = MODUL_DOMYSLNY) {
   if (!(kWh > 0)) return 0;
-  const m = SKLEP_SOFAR.pojemnoscModulu;
-  return +(Math.ceil(kWh / m) * m).toFixed(2);
+  if (!(modulKWh > 0)) return kWh;
+  return +(Math.ceil(kWh / modulKWh) * modulKWh).toFixed(2);
 }
 
 export function cenaSklepowaMagazynu(pojemnoscKWh) {
@@ -311,17 +338,26 @@ export const ETYKIETY_POZYCJI = {
  * Przy jednej zbiorczej kwocie koszt magazynu trzeba by zgadywac z cennika, czyli
  * odpowiadac cennikiem zamiast oferta, ktora czytelnik ma przed soba.
  */
+/**
+ * Ceny z cennika sa SZACUNKIEM, wiec zaokraglamy je do stu zlotych. Kwota w rodzaju
+ * "18 896 zl" udaje precyzje, ktorej nie ma: sama cena modulu rozni sie miedzy sklepami
+ * o kilkaset zlotych, a montaz o wiecej. Zaokraglenie idzie na kazdej pozycji osobno,
+ * zeby suma pozycji dalej byla dokladnie tym, co pokazuje pole "Razem" (punkt 5 CLAUDE.md).
+ */
+const doStu = (v) => Math.round(v / 100) * 100;
+
 export function pozycjeZCennika({
   kWp, magazynKWh, zasilanieAwaryjne = false, cennik = CENNIK_ODNIESIENIA,
+  modulKWh = MODUL_DOMYSLNY,
 }) {
   return {
-    panele: Math.round(kWp * cennik.zlZaKWpZPanelami),
-    falownik: kWp > 0 ? cennik.falownikHybrydowy : 0,
+    panele: doStu(kWp * cennik.zlZaKWpZPanelami),
+    falownik: kWp > 0 ? doStu(cennik.falownikHybrydowy) : 0,
     // Cena za kWh dotyczy pojemnosci, ktora naprawde kupujesz - czyli calych modulow.
     magazyn: magazynKWh > 0
-      ? Math.round(cennik.magazynBaza + pojemnoscModulowa(magazynKWh) * cennik.magazynZaKWh)
+      ? doStu(cennik.magazynBaza + pojemnoscModulowa(magazynKWh, modulKWh) * cennik.magazynZaKWh)
       : 0,
-    eps: zasilanieAwaryjne ? cennik.zasilanieAwaryjne : 0,
+    eps: zasilanieAwaryjne ? doStu(cennik.zasilanieAwaryjne) : 0,
   };
 }
 
@@ -356,8 +392,9 @@ export function rozdzielKwote(razem, pozycje) {
 
 export function kosztInstalacji({
   kWp, magazynKWh, zasilanieAwaryjne = false, cennik = CENNIK_ODNIESIENIA,
+  modulKWh = MODUL_DOMYSLNY,
 }) {
-  return sumaPozycji(pozycjeZCennika({ kWp, magazynKWh, zasilanieAwaryjne, cennik }));
+  return sumaPozycji(pozycjeZCennika({ kWp, magazynKWh, zasilanieAwaryjne, cennik, modulKWh }));
 }
 
 /**

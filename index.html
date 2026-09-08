@@ -324,8 +324,7 @@
       </div>
       <div>
         <label for="magazyn">Magazyn energii
-          <span class="hint">Pojemność nominalna z oferty. Moduły wchodzą po 5,12 kWh,
-            więc suwak zaokrągla w górę do całego modułu.</span></label>
+          <span class="hint" id="magazynHint">Pojemność nominalna z oferty.</span></label>
         <div class="rangerow">
           <input type="range" id="magazyn" value="15" min="0" max="30" step="1">
           <output id="magazynOut">15 kWh</output>
@@ -512,6 +511,11 @@
       obniżania rachunku, bo panele dają wtedy za mało, żeby magazyn naładować.
       Wymaga skonfigurowania falownika - domyślnie po montażu tego nie ma.</span></label>
       <select id="dobieranie"><option value="1" selected>Tak</option><option value="0">Nie</option></select></div>
+    <div><label for="modul">Wielkość modułu magazynu
+      <span class="hint">Magazyn kupuje się w całych modułach, a ich pojemność zależy
+      od producenta. Jeśli oferta podaje jedną liczbę i nie wiadomo, z czego jest złożona,
+      zostaw „dowolna".</span></label>
+      <select id="modul"></select></div>
     <div><label for="podatnicy">Liczba podatników (limit ulgi)
       <span class="hint">Małżonkowie współwłaściciele mają po własnym limicie 53 000 zł.</span></label>
       <input type="number" id="podatnicy" value="1" min="1" max="2" step="1"></div>

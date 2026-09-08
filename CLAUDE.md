@@ -269,18 +269,31 @@ w `economics.js`), który skaluje się z konfiguracją: ceny instalacji z Akadem
 Fotowoltaiki (kwiecień 2026) plus ceny magazynów za kWh z montażem (wrzesień 2026).
 Domyślnych liczb celowo nie ruszaliśmy - kalkulator dalej liczy z cen sprzętu ze sklepu
 producenta, a pasek pokazuje, gdzie ta wycena stoi wobec rynku. Przy 9 kWp i 15 kWh nasze
-37 250 zł mieści się tuż nad dolną granicą widełek 34 745 - 72 025 zł (typowa 53 460 zł).
+37 700 zł mieści się tuż nad dolną granicą widełek 34 700 - 72 000 zł (typowa 53 500 zł).
 Poprzedni pasek pokazywał sztywne 43 446 - 68 273 zł z sześciu ofert z osiedla, co przy
 instalacji 4 kWp było po prostu mylące; te oferty zostały w tekście pod paskiem.
 
 Do rozstrzygnięcia z Tomaszem: czy dołożyć drugi cennik do wyboru („sprzęt 2026" obok
-„oferta pod klucz 2025"), czy przestawić domyślny. **Zrobione 8.09.2026:** koszt magazynu liczy się skokowo. `pojemnoscModulowa` zaokrągla
-pojemność w górę do całych modułów 5,12 kWh i tak liczy się zarówno cena, jak i praca
-magazynu; suwak pokazuje realną pojemność (13 kWh -> 15,36 kWh, trzy moduły). Wcześniej
-liniowa cena przy 13 kWh dawała 16 300 zł, czyli **mniej niż same moduły w sklepie
-producenta** (17 196 zł), a przy 16 kWh była niższa o prawie 2 900 zł. Test
-„cennik nie może wycenić magazynu taniej niż sam sprzęt w sklepie" pilnuje tego dla
-ośmiu pojemności.
+„oferta pod klucz 2025"), czy przestawić domyślny. **Zrobione 8.09.2026:** koszt magazynu liczy się skokowo. `pojemnoscModulowa(kWh, modulKWh)`
+zaokrągla pojemność w górę do całych modułów i tak liczy się zarówno cena, jak i praca
+magazynu; suwak pokazuje realną pojemność. Wcześniej liniowa cena przy 13 kWh dawała
+16 300 zł, czyli **mniej niż same moduły w sklepie producenta** (17 196 zł), a przy 16 kWh
+była niższa o prawie 2 900 zł. Test „cennik nie może wycenić magazynu taniej niż sam sprzęt
+w sklepie" pilnuje tego dla ośmiu pojemności.
+
+**Rozmiar modułu jest parametrem, nie stałą** (`MODULY_MAGAZYNU`, pole w parametrach
+zaawansowanych). Pierwsza wersja zaszywała 5,12 kWh Sofara w kalkulatorze liczącym dla
+całej Polski, a producenci mają różne: 2,56 (BYD), 3,2 (Sungrow), 4,8 (Pylontech),
+5 (Huawei), 5,12 (Sofar, Deye, GoodWe Lynx), 6,1 (część serii). Opcja „dowolna pojemność"
+(0) wyłącza zaokrąglanie - dla ofert podanych jedną liczbą. Zmiana tego pola musi
+resetować `kosztRecznie`, tak samo jak zmiana mocy czy pojemności: inaczej kwoty
+zostają z poprzedniej konfiguracji.
+
+**Ceny z cennika orientacyjnego zaokrąglamy do stu złotych** (`doStu` w `economics.js`,
+to samo w `widelkiRynkowe`). Kwota „18 896 zł" udaje precyzję, której nie ma - sama cena
+modułu różni się między sklepami o kilkaset złotych. Zaokrąglenie idzie **na każdej
+pozycji osobno**, żeby suma pozycji dalej była dokładnie tym, co pokazuje pole „Razem"
+(punkt 5 niżej).
 
 ## Sprawy otwarte
 
