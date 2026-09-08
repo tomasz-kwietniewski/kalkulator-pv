@@ -80,6 +80,7 @@ który nigdy nie trafia do serwera.
 ```
 index.html            strona
 src/engine.js         symulacja 8760 h: PV, dom, magazyn, siec (bez DOM, testowalny z Node)
+src/pv.js             wybor profilu naslonecznienia i mnoznik nachylenia dachu
 src/zones.js          strefy taryfowe z kalendarza: swieta, dni wolne, sezon taryfowy
 src/pricing.js        taryfy pieciu operatorow, oplaty, net-billing, taryfa dynamiczna
 src/economics.js      pozycje kosztowe, dotacje, ulga, kaskada nakladu, czas zwrotu
@@ -187,6 +188,27 @@ uczciwe założenie także dla kogoś, kto czyta ten kalkulator.
 Wniosek praktyczny dla kogoś, kto dopiero wybiera: **jeśli myślisz o taryfie dynamicznej,
 sprawdź listę obsługiwanych urządzeń, zanim wybierzesz falownik** - a nie odwrotnie.
 
+## Dla kogo ten wynik jest wiarygodny
+
+Kalkulator liczy autokonsumpcję na godzinowym profilu produkcji, więc jakość wyniku zależy
+od tego, skąd ten profil pochodzi:
+
+- **Profil zmierzony (dom odniesienia, Musuły)** - domyślny. Realny rok pracy instalacji
+  9 kWp: 1 008 kWh z każdego kWp, razem z kształtem dachu, zacienieniem i przerwami
+  falownika. Najmocniejszy wariant, ale opisuje jeden konkretny dom.
+- **Miasto z PVGIS** - model. Dobrze oddaje nasłonecznienie regionu, ale zakłada czysty
+  dach 35° na południe, bez zacienienia.
+
+Porównanie obu (kalibracja uczciwości): zmierzony rok dał 1 008 kWh/kWp, PVGIS dla
+Warszawy 1 049 - różnica 4% w skali roku. **Rozkład miesięczny rozjeżdża się mocniej**:
+zmierzony sierpień i wrzesień 2025 wypadły o 30-35% poniżej typowych, a marzec-lipiec 2026
+o kilkanaście procent powyżej. To pogoda tamtego konkretnego roku plus przerwy falownika,
+nie błąd modelu - ale trzeba o tym wiedzieć, czytając wykres miesięczny.
+
+Mnożniki za ustawienie dachu też pochodzą teraz z PVGIS (siatka nachyleń i azymutów dla
+środkowej Polski), a nie z oszacowania. Przy okazji wyszło, że dach wschód-zachód traci
+21%, a nie 15%, jak zakładała poprzednia wersja.
+
 ## Źródła stawek
 
 Kalkulator liczy dla pięciu operatorów sieci. Wszystkie stawki pochodzą z wyciągów
@@ -211,6 +233,12 @@ Różnice między nimi są większe, niż się wydaje, i nie sprowadzają się d
 - **E.ON pobiera opłatę handlową** (13,23 zł netto miesięcznie), której sprzedawcy
   z urzędu na taryfie URE nie mają.
 - Ceny RCE: API PSE (`api.raporty.pse.pl`)
+- **Nasłonecznienie dla dziesięciu miast**: PVGIS 5.3, baza SARAH3, lata 2014-2023,
+  pobrane skryptem `tools/pobierz-pvgis.mjs`. PVGIS © European Union. Dane są bezpłatne
+  i bez ograniczeń użycia. Dla każdego miasta bierzemy **rok medianowy**, a nie średnią
+  z dziesięciu lat: uśrednianie godzina po godzinie wygładziłoby zachmurzenie i zawyżyło
+  autokonsumpcję. Czasy PVGIS są w UTC i zostały przeliczone na czas polski razem ze
+  zmianą czasu - bez tego cała doba byłaby przesunięta o godzinę.
 - **Ceny sprzętu**: sklep producenta (sofar-sklep.pl), stan na 14.08.2026. Falownik
   Sofar HYD8KTL 5 799 zł, jednostka sterująca magazynu 1 299 zł, moduł 5,12 kWh
   5 299 zł (czyli 1 035 zł/kWh), rozdzielnica AC HydBOX 32A 4 299 zł - wszystko brutto.

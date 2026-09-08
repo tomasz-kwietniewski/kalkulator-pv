@@ -8,6 +8,7 @@ import rceDane from '../data/rce.js';
 import { symuluj, krzywaMagazynu } from './engine.js';
 import { rachunekRoczny, DYNAMICZNA, OPERATORZY } from './pricing.js';
 import { maskiProfilu, STREFY } from './zones.js';
+import { PROFILE_PV, profilPv, mnoznikNachylenia, NACHYLENIA, ZRODLO } from './pv.js';
 import {
   pozycjeZCennika, sumaPozycji, rozdzielKwote, POZYCJE_KOSZTU,
   kaskadaNakladu, zwrot, zwrotDwutorowo, dotacjaPME2, cenaSklepowaMagazynu,
@@ -64,7 +65,8 @@ const POLE_POZYCJI = {
   panele: 'kosztPanele', falownik: 'kosztFalownik', magazyn: 'kosztMagazyn', eps: 'kosztEps',
 };
 
-const POLA = ['zuzycie', 'auto', 'orientacja', 'kwp', 'magazyn', 'operator', 'grupa', 'eps',
+const POLA = ['zuzycie', 'auto', 'lokalizacja', 'orientacja', 'nachylenie', 'kwp', 'magazyn',
+  'operator', 'grupa', 'eps',
   'kosztPanele', 'kosztFalownik', 'kosztMagazyn', 'kosztEps', 'koszt',
   'dotacja', 'pit', 'wzrostCen', 'rezerwa', 'dobieranie', 'podatnicy',
   'mocAwaria', 'limitEps'];
@@ -88,12 +90,21 @@ let proporcjeKosztu = null;
 
 function czytajPola() {
   const operator = $('operator').value;
+  const lokalizacja = $('lokalizacja').value;
+  const orientacja = $('orientacja').value;
+  const nachylenie = +$('nachylenie').value;
   const grupa = $('grupa').value;
   return {
     operator,
     zuzycieDomuKWh: +$('zuzycie').value,
     poborAutaKWh: +$('auto').value * KWH_NA_KM,
-    orientacja: $('orientacja').value,
+    lokalizacja,
+    orientacja,
+    nachylenie,
+    mnoznikNachylenia: mnoznikNachylenia(nachylenie, orientacja),
+    // Profil produkcji podmieniamy na wybrana lokalizacje - reszta profilu (dom, auto,
+    // dni wolne) pochodzi ze zmierzonego roku i nie zalezy od miejsca.
+    profil: { ...profile, pv_per_kwp: profilPv(lokalizacja) },
     kWp: +$('kwp').value,
     magazynKWh: +$('magazyn').value,
     grupa,
@@ -146,11 +157,12 @@ function policzWariant(p, kWp, magazynKWh) {
     zuzycieDomuKWh: p.zuzycieDomuKWh,
     poborAutaKWh: p.poborAutaKWh,
     orientacja: p.orientacja,
+    mnoznikNachylenia: p.mnoznikNachylenia,
     rezerwaAwaryjna: p.rezerwaAwaryjna,
     maskaStrefy: p.MASKI[p.grupaRozliczen],
     // Dobieranie z sieci ma sens tylko przy taryfie ze strefami.
     ladowanieZSieci: p.ladowanieZSieci && magazynKWh > 0 && p.grupaRozliczen !== 'G11',
-  }, profile);
+  }, p.profil);
   const rachunek = rachunekRoczny(wynik, p.MASKI[p.grupaRozliczen], p.grupaRozliczen, {
     operator: p.operator,
     rce, dynamiczna: p.dynamiczna, czapka: DYNAMICZNA.czapka, netBilling: kWp > 0,
@@ -281,8 +293,9 @@ function rysujTaryfy(p) {
       kWp: p.kWp, magazynKWh: p.magazynKWh,
       zuzycieDomuKWh: p.zuzycieDomuKWh, poborAutaKWh: p.poborAutaKWh,
       orientacja: p.orientacja, rezerwaAwaryjna: p.rezerwaAwaryjna, maskaStrefy: p.MASKI[g],
+      mnoznikNachylenia: p.mnoznikNachylenia,
       ladowanieZSieci: p.ladowanieZSieci && p.magazynKWh > 0 && g !== 'G11',
-    }, profile);
+    }, p.profil);
     return rachunekRoczny(w, p.MASKI[g], g, {
       rce, dynamiczna, netBilling: p.kWp > 0, operator: p.operator,
     }).brutto;
@@ -403,10 +416,11 @@ function rysujKrzywa(p, wybrana) {
     zuzycieDomuKWh: p.zuzycieDomuKWh,
     poborAutaKWh: p.poborAutaKWh,
     orientacja: p.orientacja,
+    mnoznikNachylenia: p.mnoznikNachylenia,
     rezerwaAwaryjna: p.rezerwaAwaryjna,
     maskaStrefy: p.MASKI[p.grupaRozliczen],
     ladowanieZSieci: p.ladowanieZSieci && p.grupaRozliczen !== 'G11',
-  }, profile, PUNKTY_KRZYWEJ);
+  }, p.profil, PUNKTY_KRZYWEJ);
 
   rysujNasycenie($('wykresNasycenie'), krzywa, wybrana);
 
@@ -679,8 +693,30 @@ function pobierzHtml() {
 
 const POLA_KOSZTU = ['koszt', ...Object.values(POLE_POZYCJI)];
 
+/** Listy zalezne od danych: profile naslonecznienia i katy nachylenia dachu. */
+function wypelnijListy() {
+  $('lokalizacja').innerHTML = PROFILE_PV.map((pr) => {
+    const etykieta = pr.zrodlo === 'pomiar'
+      ? `${pr.nazwa} - profil zmierzony`
+      : `${pr.nazwa} - model PVGIS`;
+    return `<option value="${pr.id}">${etykieta} (${pr.uzyskRoczny} kWh/kWp)</option>`;
+  }).join('');
+  $('nachylenie').innerHTML = NACHYLENIA
+    .map((n) => `<option value="${n}"${n === 35 ? ' selected' : ''}>${n}°</option>`).join('');
+}
+
+/** Skad pochodzi wybrany profil - to ma byc widoczne przy samym polu, nie w stopce. */
+function opiszLokalizacje(id) {
+  const pr = PROFILE_PV.find((x) => x.id === id) ?? PROFILE_PV[0];
+  $('lokalizacjaHint').textContent = pr.zrodlo === 'pomiar'
+    ? `Zmierzony rok pracy realnej instalacji: ${pr.uzyskRoczny} kWh z każdego kWp.`
+    : `${pr.opis} Dane: ${ZRODLO.nazwa}, ${ZRODLO.atrybucja}.`;
+}
+
 function start() {
+  wypelnijListy();
   odtworzZAdresu();
+  opiszLokalizacje($('lokalizacja').value);
   dopasujTaryfyDoOperatora();
   POLA.forEach((id) => {
     const el = $(id);
@@ -691,6 +727,7 @@ function start() {
       // przypisana do nowej i cicho zafalszowala zwrot.
       if (['kwp', 'magazyn', 'eps'].includes(id)) kosztRecznie = false;
       if (id === 'operator') dopasujTaryfyDoOperatora();
+      if (id === 'lokalizacja') opiszLokalizacje($('lokalizacja').value);
       przelicz();
     });
   });

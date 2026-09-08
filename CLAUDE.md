@@ -57,6 +57,32 @@ Gdyby u Tomasza obowiązywał wariant pierwszy, letnie okna wypadałyby w profil
 o godzinę później (16-18 i 23-7). Model zakłada wariant drugi, bo licznik jest nowy
 i raportuje do CSIRE. Rozstrzygnie faktura z rozbiciem na strefy.
 
+## Profile nasłonecznienia: `data/pv.js` i `tools/pobierz-pvgis.mjs`
+
+`data/pv.js` jest **generowane** skryptem `tools/pobierz-pvgis.mjs` (PVGIS 5.3, baza
+SARAH3, lata 2014-2023). Skrypt wolno tu trzymać - zakaz z sekcji wyżej dotyczy generatora
+profili zużycia z prywatnego repozytorium, bo tamten czyta surowe logi z adresem i numerami
+PPE. PVGIS to publiczne API i nic prywatnego przez nie nie przechodzi.
+
+Trzy rzeczy, które przy odświeżaniu danych łatwo zepsuć:
+
+1. **PVGIS podaje czasy w UTC.** Cały model - profil domu, strefy taryfowe, praca magazynu
+   - chodzi w czasie lokalnym. Bez przeliczenia (zima UTC+1, lato UTC+2) szczyt produkcji
+   wypada godzinę za wcześnie i autokonsumpcja liczy się na przesuniętej dobie. Pierwsza
+   wersja danych miała ten błąd; pilnuje tego test „profile PVGIS chodzą w czasie lokalnym".
+   Szczyt doby ma wypadać o 11 lub 12 - później na zachodzie kraju, bo tam słońce góruje
+   później. To nie jest błąd.
+2. **Rok medianowy, nie średnia z lat.** Uśrednianie godzina po godzinie wygładza
+   zachmurzenie i daje profil bez ostrych szczytów, co zawyża autokonsumpcję - czyli psuje
+   dokładnie tę liczbę, po którą ludzie tu przychodzą.
+3. **Godziny są spakowane po dwa znaki base36** (krok 0,77 Wh na kWp). Dziesięć lokalizacji
+   to 175 kB zamiast 400 kB, a strona ma działać otwarta z dysku, więc wszystko jedzie
+   w pliku. Dekoder siedzi w tym samym module, rozpakowuje leniwie i zapamiętuje wynik.
+
+Mnożniki orientacji w `ORIENTACJE` (silnik) i mnożnik nachylenia w `src/pv.js` liczą się
+z tej samej siatki PVGIS. Nie mnożyć ich przez siebie inaczej niż dziś: mnożnik nachylenia
+jest liczony **względem tej samej orientacji**, żeby orientacja nie weszła dwa razy.
+
 ## Parametry skalibrowane - traktować ostrożnie
 
 Dwie wartości w `src/engine.js` nie pochodzą z kart katalogowych, tylko zostały dobrane

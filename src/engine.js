@@ -64,10 +64,16 @@ export const DOMYSLNE = {
 };
 
 /** Mnoznik rocznego uzysku wzgledem dachu poludniowego. */
+/**
+ * Mnozniki rocznego uzysku wzgledem poludnia, policzone z siatki PVGIS dla srodkowej
+ * Polski przy dachu 35 stopni (UZYSK_NACHYLENIE w data/pv.js): poludnie 1064,
+ * poludniowy wschod/zachod srednio 999,5, wschod-zachod srednio 836,5 kWh/kWp.
+ * Wczesniej stalo tu 0,95 i 0,85 - pierwsza liczba trafiona, druga zawyzona o 8%.
+ */
 export const ORIENTACJE = {
   poludnie: { etykieta: 'Poludnie', mnoznik: 1.0, przesuniecie: 0 },
-  poludnieWschodZachod: { etykieta: 'Poludniowy wschod / zachod', mnoznik: 0.95, przesuniecie: 1 },
-  wschodZachod: { etykieta: 'Wschod-zachod (dwa polacie)', mnoznik: 0.85, przesuniecie: 2 },
+  poludnieWschodZachod: { etykieta: 'Poludniowy wschod / zachod', mnoznik: 0.94, przesuniecie: 1 },
+  wschodZachod: { etykieta: 'Wschod-zachod (dwa polacie)', mnoznik: 0.79, przesuniecie: 2 },
 };
 
 /**
@@ -102,6 +108,8 @@ export function symuluj(p, profile) {
     zuzycieDomuKWh = 0,
     poborAutaKWh = 0,
     orientacja = 'poludnie',
+    // Mnoznik za nachylenie dachu wzgledem 35 stopni - liczy go src/pv.js z siatki PVGIS.
+    mnoznikNachylenia = 1,
     udzialUzytkowy = DOMYSLNE.udzialUzytkowy,
     rezerwaAwaryjna = DOMYSLNE.rezerwaAwaryjna,
     sprawnoscRoundTrip = DOMYSLNE.sprawnoscRoundTrip,
@@ -117,7 +125,7 @@ export function symuluj(p, profile) {
 
   const orient = ORIENTACJE[orientacja] ?? ORIENTACJE.poludnie;
   const pvBaza = przesunProfil(profile.pv_per_kwp, orient.przesuniecie);
-  const skalaPv = kWp * orient.mnoznik * sprawnoscFalownika;
+  const skalaPv = kWp * orient.mnoznik * mnoznikNachylenia * sprawnoscFalownika;
   const skalaDomu = zuzycieDomuKWh / 1000;
   const skalaAuta = poborAutaKWh / 1000;
 
