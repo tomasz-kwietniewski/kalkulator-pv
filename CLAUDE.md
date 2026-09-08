@@ -28,11 +28,17 @@ materiał testowy: `test/zones.test.mjs` porównuje wygenerowaną maskę z zapis
 po godzinie. Silnik i model cenowy dostają maskę w parametrze (`maskaStrefy`,
 `Uint8Array`), więc nie wiedzą już nic o profilu ani o nazwie grupy taryfowej.
 
-Jedyna dopuszczona rozbieżność wobec zapisanych masek to sześć dni: generator kończył
-czas letni 31.10.2025 zamiast w ostatnią niedzielę października (26.10). Zapisany ciąg
-ma tam blok popołudniowy 15-17, kalendarz daje poprawne 13-15. Test wypisuje tę różnicę
-wprost i **upadnie przy każdej innej** - nie poszerzać wyjątku, tylko sprawdzić, co się
-zmieniło.
+Test jest bramką bez wyjątków: każda godzina musi się zgadzać. Wcześniej sześć dni się
+rozjeżdżało - generator kończył czas letni 31.10.2025 zamiast w ostatnią niedzielę
+października (26.10), więc dawał tam blok popołudniowy 15-17 zamiast 13-15. Kalendarz ma
+rację (sezony taryfowe idą za zmianą czasu, co widać po drugiej granicy: 29.03.2026
+generator trafił poprawnie), więc **8.09.2026 poprawione zostały dane**, w `data/profiles.js`
+i `test/profiles_raw.json` naraz, po 24 godziny w G12 i 20 w G12w.
+
+**Generator w prywatnym `zuzycie-pradu` ma ten błąd nadal.** Ponowne wygenerowanie profilu
+przywróci stare maski i test upadnie - wtedy poprawić generator, a nie test. Wyniki
+kalkulatora tej poprawki nie zauważyły (silnik liczy z kalendarza od commita 419e972),
+zmieniła się wyłącznie zgodność danych z modelem.
 
 ## Parametry skalibrowane - traktować ostrożnie
 

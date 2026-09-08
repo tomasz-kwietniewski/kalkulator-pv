@@ -2,13 +2,18 @@
  * Strefy taryfowe generowane z kalendarza.
  *
  * Bramka tego modulu: maski wygenerowane dla okresu profilu musza sie zgadzac
- * ze stringami zapisanymi w data/profiles.js - one pochodza z generatora w prywatnym
- * repo i to na nich policzone sa wszystkie dotychczasowe wyniki kalkulatora.
- * Jedyne dopuszczone odstepstwo jest opisane w tescie o czasie letnim: generator
- * konczyl czas letni 31 pazdziernika, a nie w ostatnia niedziele miesiaca.
+ * ze stringami zapisanymi w data/profiles.js i test/profiles_raw.json - godzina po
+ * godzinie, bez zadnego wyjatku. Stringi pochodza z generatora w prywatnym repo
+ * i to na nich policzone sa wszystkie dotychczasowe wyniki kalkulatora.
+ *
+ * Generator konczyl czas letni 31.10.2025 zamiast w ostatnia niedziele pazdziernika,
+ * wiec szesc dni mialo blok popoludniowy 15-17 zamiast 13-15. Te godziny zostaly
+ * w danych poprawione 8.09.2026 - patrz naglowek data/profiles.js. Gdy ten test
+ * upadnie po ponownym wygenerowaniu profilu, to najpewniej wraca ten sam blad.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import profile from '../data/profiles.js';
 import {
   wielkanoc, swietaPolskie, dniWolne, czasLetni, STREFY, maskaStrefy, maskiProfilu,
@@ -91,20 +96,15 @@ test('BRAMKA: maski dla okresu profilu zgadzaja sie z zapisanymi w data/profiles
   const maski = maskiProfilu(profile);
   assert.equal(maski.G12.length, GODZIN);
   assert.equal(maski.G12w.length, GODZIN);
+  assert.deepEqual(roznice(maski.G12, profile.strefa_tania_g12), []);
+  assert.deepEqual(roznice(maski.G12w, profile.strefa_tania_g12w), []);
+});
 
-  // Jedyna dopuszczona roznica: generator konczyl czas letni 31.10, a nie 26.10.2025
-  // (ostatnia niedziela pazdziernika). Przez szesc dni ma wiec blok popoludniowy
-  // 15-17 zamiast 13-15. Nic wiecej rozjechac sie nie ma prawa.
-  const oczekiwaneG12 = [];
-  for (const data of ['2025-10-26', '2025-10-27', '2025-10-28', '2025-10-29', '2025-10-30',
-    '2025-10-31']) {
-    for (const godzina of [13, 14, 15, 16]) oczekiwaneG12.push({ data, godzina });
-  }
-  assert.deepEqual(roznice(maski.G12, profile.strefa_tania_g12), oczekiwaneG12);
-
-  // W G12w niedziela 26.10 jest tania przez cala dobe, wiec zostaje piec dni roboczych.
-  const oczekiwaneG12w = oczekiwaneG12.filter((r) => r.data !== '2025-10-26');
-  assert.deepEqual(roznice(maski.G12w, profile.strefa_tania_g12w), oczekiwaneG12w);
+test('BRAMKA: ten sam kalendarz obowiazuje profil surowy z test/profiles_raw.json', () => {
+  const surowy = JSON.parse(readFileSync(new URL('./profiles_raw.json', import.meta.url)));
+  const maski = maskiProfilu(surowy);
+  assert.deepEqual(roznice(maski.G12, surowy.strefa_tania_g12), []);
+  assert.deepEqual(roznice(maski.G12w, surowy.strefa_tania_g12w), []);
 });
 
 test('BRAMKA: dni wolne z kalendarza zgadzaja sie z maska dzien_wolny w profilu', () => {
