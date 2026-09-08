@@ -189,6 +189,9 @@
     body{font-size:11pt;} .wrap{padding:0; max-width:none;}
     details{border:0; padding:0;} details summary{display:none;}
     .chartbox,.panel,.card,.hero,.kaskada,.prog{break-inside:avoid;}
+    /* Naglowek sekcji nie moze zostac sam na dole strony - w pierwszym wydruku
+       sekcje 6, 7 i 8 zaczynaly sie tuz przed lamaniem i zostawialy pusta polowe kartki. */
+    h2,h3{break-after:avoid;}
     h2{margin-top:22px;}
     .hero{background:#f2faf6 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
     .pasekstos .seg{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
@@ -321,7 +324,8 @@
       </div>
       <div>
         <label for="magazyn">Magazyn energii
-          <span class="hint">Pojemność nominalna z oferty.</span></label>
+          <span class="hint">Pojemność nominalna z oferty. Moduły wchodzą po 5,12 kWh,
+            więc suwak zaokrągla w górę do całego modułu.</span></label>
         <div class="rangerow">
           <input type="range" id="magazyn" value="15" min="0" max="30" step="1">
           <output id="magazynOut">15 kWh</output>
@@ -746,12 +750,13 @@
   miesiącach podniesiono do poziomu typowego roku, a zużycie o energię, którą widział licznik
   operatora, a logger nie. Kształt dobowy pozostał zmierzony, skorygowano tylko sumy
   miesięczne.</p>
-  <p><b>Czego kalkulator nie wie.</b> Że Twój dom to nie ten dom. Jeśli grzejesz inaczej niż
-  pompą ciepła, rozkład zużycia w roku będzie inny i wynik przestanie być wiarygodny.
-  Model sprawdzono na zmierzonym roku: odtwarza pobór z sieci z dokładnością do 1%,
-  oddanie do sieci do 5%, a rozkład poboru między strefy taryfowe do 1,3 punktu
-  procentowego. To nie znaczy, że przewidzi Twój rok z taką dokładnością - znaczy, że nie
-  zmyśla.</p>
+  <p><b>Czego kalkulator nie wie.</b> Że Twój dom to nie ten dom. Sposób ogrzewania możesz
+  wybrać w formularzu, ale archetyp jest rekonstrukcją z tego samego zmierzonego roku,
+  a nie pomiarem Twojego domu - jeśli masz plik godzinowy z licznika, wgraj go, bo tylko
+  on opisuje naprawdę Ciebie. Model sprawdzono na zmierzonym roku: odtwarza pobór z sieci
+  z dokładnością do 1%, oddanie do sieci do 6%, a rozkład poboru między strefy taryfowe
+  do 2,2 punktu procentowego. To nie znaczy, że przewidzi Twój rok z taką dokładnością -
+  znaczy, że nie zmyśla.</p>
   <div class="btnrow noprint">
     <button class="akcja" id="btnPdf">Zapisz jako PDF</button>
     <button class="akcja" id="btnHtml">Pobierz wynik jako plik</button>

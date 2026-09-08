@@ -179,7 +179,10 @@ Pozostałe parametry mają oparcie w pomiarze albo w dokumentacji:
    proporcje przepadłyby po pierwszym wpisanym znaku.
 7. **Liczby idą przez `src/format.js`.** Wstawiona wprost do szablonu liczba dziesiętna
    wychodzi z kropką („22.5 kWh"), a czas zwrotu bez odmiany („7,4 lat"). Jedno i drugie
-   już się wydarzyło.
+   już się wydarzyło. Od 8.09.2026, gdy pojemność magazynu przestała być liczbą całkowitą
+   (15,36 kWh), wyszło tego jeszcze kilka miejsc naraz. **`liczba()` zaokrągla** - bez tego
+   wartość z dzielenia wchodziła na stronę jako „2,8569600000000004 kWh"; drugi argument
+   ustawia liczbę miejsc.
 
 ## Weryfikacja po zmianach
 
@@ -271,10 +274,13 @@ Poprzedni pasek pokazywał sztywne 43 446 - 68 273 zł z sześciu ofert z osiedl
 instalacji 4 kWp było po prostu mylące; te oferty zostały w tekście pod paskiem.
 
 Do rozstrzygnięcia z Tomaszem: czy dołożyć drugi cennik do wyboru („sprzęt 2026" obok
-„oferta pod klucz 2025"), czy przestawić domyślny. Do sprawdzenia przy okazji: moduły
-wchodzą po 5,12 kWh, a kolumna mieści podobno 4 sztuki (do 20,48 kWh) - jeśli tak, koszt
-magazynu powinien liczyć się **skokowo**, bo przy suwaku na 13 kWh i tak kupuje się
-trzy moduły. Dziś kalkulator liczy liniowo, co zaniża cenę pojemności nietypowych.
+„oferta pod klucz 2025"), czy przestawić domyślny. **Zrobione 8.09.2026:** koszt magazynu liczy się skokowo. `pojemnoscModulowa` zaokrągla
+pojemność w górę do całych modułów 5,12 kWh i tak liczy się zarówno cena, jak i praca
+magazynu; suwak pokazuje realną pojemność (13 kWh -> 15,36 kWh, trzy moduły). Wcześniej
+liniowa cena przy 13 kWh dawała 16 300 zł, czyli **mniej niż same moduły w sklepie
+producenta** (17 196 zł), a przy 16 kWh była niższa o prawie 2 900 zł. Test
+„cennik nie może wycenić magazynu taniej niż sam sprzęt w sklepie" pilnuje tego dla
+ośmiu pojemności.
 
 ## Sprawy otwarte
 
@@ -286,14 +292,20 @@ trzy moduły. Dziś kalkulator liczy liniowo, co zaniża cenę pojemności niety
 - **Ceny wariantu backupu całego domu** (rozdzielnica z automatycznym przełącznikiem) -
   sekcja 6 opisuje ten wariant jakościowo, bo nie mamy dla niego żadnej oferty. Gdy
   pojawi się konkretna wycena, można ją dołożyć obok widełek 2 900 - 4 000 zł za EPS.
-- Nieprzetestowane klikaniem: eksport do PDF i do pliku HTML. Widok na telefonie
-  sprawdzony 12.08.2026 (390 px): brak poziomego przewijania, tabela przewija się
-  wewnątrz `.tabwrap`, diagram przepływu schodzi do jednej kolumny.
+- **Eksport do PDF i do HTML sprawdzony 8.09.2026** (Playwright: `page.pdf()` na mediach
+  print oraz kliknięcie „Zapisz jako plik" z przechwyceniem bloba). PDF ma 6 stron,
+  formularz jest schowany, wykresy się rysują. Eksport HTML waży ok. 185 kB, nie ma
+  w nim ani jednego `<script>`, wykresy są wklejone jako PNG w data URI, a pola formularza
+  zamienione na tekst - w pliku bez JS pole do wpisywania i tak nic by nie robiło.
+  Przy okazji poprawione: `h2,h3 { break-after: avoid }`, bo nagłówki sekcji 6, 7 i 8
+  zostawały same na dole strony.
+- Widok na telefonie sprawdzony 12.08.2026 (390 px): brak poziomego przewijania, tabela
+  przewija się wewnątrz `.tabwrap`, diagram przepływu schodzi do jednej kolumny.
 
 ## Co wychodzi w sprawie magazynu i dlaczego to zostawiamy
 
 Na profilu domu odniesienia magazyn **wydłuża** czas zwrotu całości (2,9 roku bez
-magazynu, 4,7 roku przy 15 kWh), choć podnosi autokonsumpcję z 45% do 70%. Sam magazyn
+magazynu, 4,8 roku przy 15,36 kWh), choć podnosi autokonsumpcję z 45% do 70%. Sam magazyn
 zwraca się w ok. 13 latach, najlepiej w okolicach 10 kWh (12,3 roku). Pełna tabela jest
 w `README.md` i była przeliczana 8.09.2026 - po zmianach modelu w etapach 1-6.
 Liczby biorą się z konfiguracji domyślnej strony: 9 kWp, 11 MWh, G12w u PGE, dach

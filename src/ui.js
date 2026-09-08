@@ -13,7 +13,7 @@ import { parsujTekst, proponujKolumny, zbudujProfil, BladImportu } from './impor
 import { DOMY, profilZuzycia, opisDomu } from './domy.js';
 import {
   pozycjeZCennika, sumaPozycji, rozdzielKwote, POZYCJE_KOSZTU,
-  kaskadaNakladu, zwrot, zwrotDwutorowo, dotacjaPME2, cenaSklepowaMagazynu,
+  kaskadaNakladu, zwrot, zwrotDwutorowo, dotacjaPME2, cenaSklepowaMagazynu, pojemnoscModulowa,
   WIDELKI_OFERT_2025, WIDELKI_EPS, WIDELKI_RYNKOWE, widelkiRynkowe, DOTACJE, PME2,
 } from './economics.js';
 import {
@@ -118,7 +118,9 @@ function czytajPola() {
     },
     wlasnyProfil: !!profilWlasny,
     kWp: +$('kwp').value,
-    magazynKWh: +$('magazyn').value,
+    // Magazyn kupuje sie modulami po 5,12 kWh, wiec suwak zaokragla sie w gore do calego
+    // modulu - i tak liczymy zarowno koszt, jak i prace magazynu.
+    magazynKWh: pojemnoscModulowa(+$('magazyn').value),
     grupa,
     dynamiczna: grupa === 'dynamiczna',
     grupaRozliczen: grupa === 'dynamiczna' ? 'G12w' : grupa,
@@ -312,7 +314,9 @@ function usunProfilWlasny() {
 function przelicz() {
   const p = czytajPola();
   $('kwpOut').textContent = p.kWp + ' kWp';
-  $('magazynOut').textContent = p.magazynKWh + ' kWh';
+  $('magazynOut').textContent = p.magazynKWh > 0
+    ? `${liczba(p.magazynKWh)} kWh`
+    : 'bez magazynu';
   $('kosztEps').disabled = !p.eps;
 
   // Dopoki uzytkownik nie wpisal wlasnych kwot, pozycje ida z cennika odniesienia.
@@ -341,7 +345,7 @@ function przelicz() {
     { nazwa: 'Bez fotowoltaiki', kWp: 0, magazyn: 0, koszt: 0 },
     { nazwa: `Sama fotowoltaika ${p.kWp} kWp`, kWp: p.kWp, magazyn: 0, koszt: bezMagazynu },
     {
-      nazwa: `Fotowoltaika + magazyn ${magazynPokazowy} kWh`
+      nazwa: `Fotowoltaika + magazyn ${liczba(magazynPokazowy)} kWh`
         + (p.magazynKWh > 0 ? '' : ' (dla porównania)'),
       kWp: p.kWp, magazyn: magazynPokazowy, koszt: bezMagazynu + kosztMagazynuPokazowego,
     },
@@ -390,14 +394,14 @@ function rysujKarty(p, w, karta) {
   $('podsumowanie').innerHTML = pelny.kWp === 0
     ? 'Ustaw moc fotowoltaiki powyżej zera, żeby zobaczyć wynik.'
     : `Przy zużyciu ${kwh(p.zuzycieDomuKWh)} rocznie instalacja ${pelny.kWp} kWp`
-      + (p.magazynKWh > 0 ? ` z magazynem ${p.magazynKWh} kWh` : ' bez magazynu')
+      + (p.magazynKWh > 0 ? ` z magazynem ${liczba(p.magazynKWh)} kWh` : ' bez magazynu')
       + ` obniża rachunek z <b>${zl(w[0].rachunek.brutto)}</b> `
       + `do <b>${zl(karta.rachunek.brutto)}</b> rocznie.`;
 
   $('karty').innerHTML = [
     ['Rachunek dziś', zl(w[0].rachunek.brutto), 'c', 'bez fotowoltaiki'],
     ['Rachunek po instalacji', zl(karta.rachunek.brutto), 'g',
-      `${karta.kWp} kWp${p.magazynKWh > 0 ? ' + ' + p.magazynKWh + ' kWh' : ', bez magazynu'}`],
+      `${liczba(karta.kWp)} kWp${p.magazynKWh > 0 ? ' + ' + liczba(p.magazynKWh) + ' kWh' : ', bez magazynu'}`],
     ['Oszczędność rocznie', zl(karta.oszczednosc), 'g',
       p.magazynKWh > 0 ? `w tym dzięki magazynowi: ${zl(dodatekMagazynu)}`
         : `magazyn ${pelny.magazyn} kWh dodałby ${zl(dodatekMagazynu)}`],
@@ -514,8 +518,8 @@ function rysujMagazyn(p, w) {
 
   $('magazynLead').innerHTML = p.kWp === 0
     ? 'Ustaw moc fotowoltaiki powyżej zera.'
-    : (hipotetyczny ? `Nie planujesz magazynu, więc liczymy przykładowe <b>${pojemnosc} kWh</b>, `
-      + 'żeby było widać, co by zmieniło. ' : `Magazyn <b>${pojemnosc} kWh</b> przy tej fotowoltaice. `)
+    : (hipotetyczny ? `Nie planujesz magazynu, więc liczymy przykładowe <b>${liczba(pojemnosc)} kWh</b>, `
+      + 'żeby było widać, co by zmieniło. ' : `Magazyn <b>${liczba(pojemnosc)} kWh</b> przy tej fotowoltaice. `)
       + `Autokonsumpcja rośnie z ${proc(sama.wynik.autokonsumpcja)} do `
       + `<b>${proc(pelny.wynik.autokonsumpcja)}</b>, czyli o ${punktyProc(punkty)}. `
       + werdykt;
@@ -535,7 +539,7 @@ function rysujMagazyn(p, w) {
 
   $('przeplywy').innerHTML =
     kolumnaPrzeplywu('Sama fotowoltaika', `${p.kWp} kWp, bez magazynu`, sama.wynik)
-    + kolumnaPrzeplywu(`Z magazynem ${pojemnosc} kWh`,
+    + kolumnaPrzeplywu(`Z magazynem ${liczba(pojemnosc)} kWh`,
       `${p.kWp} kWp` + (hipotetyczny ? ' - wariant porównawczy' : ''), pelny.wynik);
 
   const zSieciDoMagazynu = pelny.wynik.doMagazynuZSieci;
@@ -586,7 +590,7 @@ function rysujKaskade(p, w) {
   if (!w.kaskada) { $('kaskada').innerHTML = ''; return; }
   const k = w.kaskada;
   const opis = `${p.kWp} kWp`
-    + (p.magazynKWh > 0 ? `, magazyn ${p.magazynKWh} kWh` : ', bez magazynu')
+    + (p.magazynKWh > 0 ? `, magazyn ${liczba(p.magazynKWh)} kWh` : ', bez magazynu')
     + (p.eps ? ', z zasilaniem awaryjnym' : '');
 
   const wiersz = (klasa, tytul, podpis, kwota) => `<div class="w ${klasa}">
@@ -670,7 +674,7 @@ function rysujPme2(p, pozycje) {
   }
   if (p.magazynKWh < PME2.minimalnaPojemnoscKWh) {
     el.innerHTML = '<div class="naglowek">Dotacja na magazyn: nie przysługuje</div>'
-      + `<div class="wiaze">Twoje ${p.magazynKWh} kWh nie sięga minimum `
+      + `<div class="wiaze">Twoje ${liczba(p.magazynKWh)} kWh nie sięga minimum `
       + `${PME2.minimalnaPojemnoscKWh} kWh wymaganego w programie Przydomowe Magazyny `
       + 'Energii. Poniżej tej pojemności wniosku nie da się złożyć.</div>';
     return;
@@ -717,7 +721,7 @@ function rysujDotacje(p, w) {
   $('dotacjeInfo').innerHTML = `<p><b>${DOTACJE.mojPrad6.nazwa}:</b> ${DOTACJE.mojPrad6.info}</p>
     <p><b>${DOTACJE.pme1.nazwa}:</b> ${DOTACJE.pme1.info}</p>
     <p><b>${DOTACJE.pme2.nazwa}:</b> ${DOTACJE.pme2.info}
-      ${zaMaly ? `<br><b>Uwaga:</b> Twój magazyn ${p.magazynKWh} kWh jest mniejszy niż zapowiadane
+      ${zaMaly ? `<br><b>Uwaga:</b> Twój magazyn ${liczba(p.magazynKWh)} kWh jest mniejszy niż zapowiadane
       minimum ${DOTACJE.pme2.minimalnaPojemnoscKWh} kWh - przy takiej pojemności dofinansowanie
       z tego programu nie przysługiwałoby.` : ''}</p>
     <p><b>Ulga termomodernizacyjna:</b> ${ulga > 0
@@ -787,10 +791,10 @@ function rysujEps(p) {
   const miesci = moc <= limit;
   $('epsWynik').className = 'callout' + (miesci ? '' : ' warn');
   $('epsWynik').innerHTML = miesci
-    ? `Zmieścisz się w limicie obwodu. Rezerwa awaryjna to <b>${rezerwaKWh.toFixed(1)} kWh</b>,
-       co przy poborze ${moc} kW wystarczy na <b>ok. ${godziny.toFixed(1)} godz.</b>
-       Na co dzień do autokonsumpcji pracuje ${uzyteczna.toFixed(1)} kWh z ${p.magazynKWh} kWh nominalnych.`
-    : `<b>Nie zmieścisz się.</b> Chcesz ${moc} kW, a obwód awaryjny wytrzyma ${limit} kW -
+    ? `Zmieścisz się w limicie obwodu. Rezerwa awaryjna to <b>${liczba(rezerwaKWh, 1)} kWh</b>,
+       co przy poborze ${liczba(moc)} kW wystarczy na <b>ok. ${liczba(godziny, 1)} godz.</b>
+       Na co dzień do autokonsumpcji pracuje ${liczba(uzyteczna, 1)} kWh z ${liczba(p.magazynKWh)} kWh nominalnych.`
+    : `<b>Nie zmieścisz się.</b> Chcesz ${liczba(moc)} kW, a obwód awaryjny wytrzyma ${liczba(limit)} kW -
        przy takim poborze zabezpieczenie wyłączy zasilanie. Albo ogranicz listę odbiorników,
        albo zapytaj o wariant z pełną rozdzielnicą i automatycznym przełącznikiem.`;
 }
@@ -820,7 +824,8 @@ function odtworzZAdresu() {
     // Starsze linki maja tylko kwote laczna - rozdzielamy ja na pozycje wedlug cennika.
     if (sumaPozycji(pozycje) === 0) {
       const wzorzec = pozycjeZCennika({
-        kWp: +$('kwp').value, magazynKWh: +$('magazyn').value, zasilanieAwaryjne: $('eps').checked,
+        kWp: +$('kwp').value, magazynKWh: pojemnoscModulowa(+$('magazyn').value),
+        zasilanieAwaryjne: $('eps').checked,
       });
       const nowe = rozdzielKwote(+par.get('koszt'), wzorzec);
       POZYCJE_KOSZTU.forEach((k) => { $(POLE_POZYCJI[k]).value = nowe[k]; });
@@ -844,15 +849,18 @@ function pobierzHtml() {
     img.style.width = '100%';
     cel.replaceWith(img);
   });
-  // Wartosci pol wpisujemy na sztywno, bo klon nie zachowuje stanu formularzy.
+  // Pola zamieniamy na tekst, bo klon nie zachowuje stanu formularzy, a w pliku bez
+  // skryptow pole do wpisywania i tak nic by nie robilo - wygladaloby na zepsute.
   POLA.forEach((id) => {
     const zrodlo = $(id); const cel = kopia.querySelector('#' + id);
-    if (!cel) return;
-    if (zrodlo.tagName === 'SELECT') {
-      cel.replaceWith(kopia.ownerDocument.createTextNode(zrodlo.selectedOptions[0].text));
-    } else if (zrodlo.type !== 'checkbox') {
-      cel.setAttribute('value', zrodlo.value);
-    }
+    if (!cel || zrodlo.type === 'checkbox') return;
+    // Liczba wpisana wprost wyszlaby z kropka ("3.6 kW"), a w dokumencie ma byc przecinek.
+    const wartosc = zrodlo.tagName === 'SELECT'
+      ? zrodlo.selectedOptions[0].text
+      : (zrodlo.type === 'number' || zrodlo.type === 'range' ? liczba(+zrodlo.value) : zrodlo.value);
+    const tekst = kopia.ownerDocument.createElement('b');
+    tekst.textContent = wartosc;
+    cel.replaceWith(tekst);
   });
   const blob = new Blob(['<!DOCTYPE html>' + kopia.outerHTML], { type: 'text/html' });
   const a = document.createElement('a');

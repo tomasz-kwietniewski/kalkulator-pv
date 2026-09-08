@@ -4,8 +4,15 @@ export const zl = (v) => Math.round(v).toLocaleString('pl-PL') + ' zł';
 export const kwh = (v) => Math.round(v).toLocaleString('pl-PL') + ' kWh';
 export const proc = (v, miejsc = 0) => v.toFixed(miejsc).replace('.', ',') + '%';
 
-/** Liczba dziesietna po polsku - przecinek, bez wiszacego ",0" przy calkowitych. */
-export const liczba = (v) => (Number.isInteger(v) ? String(v) : String(v).replace('.', ','));
+/**
+ * Liczba dziesietna po polsku - przecinek, bez wiszacego ",0" przy calkowitych.
+ * Zaokragla, bo wartosci z dzielenia potrafia przyjsc jako 2.8569600000000004 i wchodza
+ * na strone w calej okazalosci. Domyslnie dwa miejsca; `miejsc` na zawolanie.
+ */
+export const liczba = (v, miejsc = 2) => {
+  const zaokraglona = Number(Number(v).toFixed(miejsc));
+  return Number.isInteger(zaokraglona) ? String(zaokraglona) : String(zaokraglona).replace('.', ',');
+};
 
 /** Lata z przecinkiem dziesietnym - "7,4 roku" czyta sie po polsku, "7.4" nie. */
 export const lata = (v) => v.toFixed(1).replace('.', ',');

@@ -232,10 +232,22 @@ export const SKLEP_SOFAR = {
 
 /**
  * Cena sprzetu dla magazynu danej pojemnosci - liczona SKOKOWO, bo moduly wchodza
- * po 5,12 kWh. Przy suwaku na 13 kWh i tak kupuje sie trzy moduly, czyli 15,36 kWh.
- * Kalkulator liczy koszt liniowo (bo oferty tak wyceniaja), ale porownanie z cena
- * sklepowa musi uwzgledniac, ze polowy modulu nie da sie kupic.
+ * po 5,12 kWh, a jednostka sterujaca obsluguje cztery z nich. Od 8.09.2026 tak samo
+ * liczy sie cennik odniesienia (patrz pojemnoscModulowa) - wczesniej szedl liniowo
+ * i przy nietypowych pojemnosciach wychodzil tanszy niz sam sprzet.
  */
+/**
+ * Pojemnosc zaokraglona w gore do calych modulow. Polowy modulu nie da sie kupic:
+ * przy suwaku na 13 kWh do domu przyjezdzaja trzy moduly po 5,12 kWh, czyli 15,36 kWh -
+ * i tyle trzeba zaplacic. Liczenie liniowe dawalo tu cene ponizej ceny samego sprzetu
+ * w sklepie producenta (16 300 zl wobec 17 196 zl), czyli zanizalo czas zwrotu.
+ */
+export function pojemnoscModulowa(kWh) {
+  if (!(kWh > 0)) return 0;
+  const m = SKLEP_SOFAR.pojemnoscModulu;
+  return +(Math.ceil(kWh / m) * m).toFixed(2);
+}
+
 export function cenaSklepowaMagazynu(pojemnoscKWh) {
   if (!(pojemnoscKWh > 0)) return { kwota: 0, modulow: 0, pojemnoscRzeczywista: 0 };
   const modulow = Math.ceil(pojemnoscKWh / SKLEP_SOFAR.pojemnoscModulu);
@@ -305,7 +317,10 @@ export function pozycjeZCennika({
   return {
     panele: Math.round(kWp * cennik.zlZaKWpZPanelami),
     falownik: kWp > 0 ? cennik.falownikHybrydowy : 0,
-    magazyn: magazynKWh > 0 ? Math.round(cennik.magazynBaza + magazynKWh * cennik.magazynZaKWh) : 0,
+    // Cena za kWh dotyczy pojemnosci, ktora naprawde kupujesz - czyli calych modulow.
+    magazyn: magazynKWh > 0
+      ? Math.round(cennik.magazynBaza + pojemnoscModulowa(magazynKWh) * cennik.magazynZaKWh)
+      : 0,
     eps: zasilanieAwaryjne ? cennik.zasilanieAwaryjne : 0,
   };
 }

@@ -14,7 +14,7 @@ import {
   CENNIK_ODNIESIENIA, POZYCJE_KOSZTU, pozycjeZCennika, sumaPozycji, rozdzielKwote,
   kosztInstalacji, ulgaTermomodernizacyjna, kaskadaNakladu, zwrot, zwrotDwutorowo,
   ULGA, WIDELKI_OFERT_2025, WIDELKI_EPS, PME2, dotacjaPME2, cenaSklepowaMagazynu,
-  widelkiRynkowe,
+  widelkiRynkowe, pojemnoscModulowa,
 } from '../src/economics.js';
 
 const profile = JSON.parse(readFileSync(new URL('./profiles_raw.json', import.meta.url)));
@@ -26,7 +26,9 @@ test('pozycje z cennika sumuja sie do kosztu instalacji', () => {
 
   assert.equal(p.panele, 9 * CENNIK_ODNIESIENIA.zlZaKWpZPanelami);
   assert.equal(p.falownik, CENNIK_ODNIESIENIA.falownikHybrydowy);
-  assert.equal(p.magazyn, CENNIK_ODNIESIENIA.magazynBaza + 15 * CENNIK_ODNIESIENIA.magazynZaKWh);
+  // 15 kWh to trzy moduly po 5,12, czyli placi sie za 15,36 kWh
+  assert.equal(p.magazyn,
+    Math.round(CENNIK_ODNIESIENIA.magazynBaza + 15.36 * CENNIK_ODNIESIENIA.magazynZaKWh));
   assert.equal(p.eps, CENNIK_ODNIESIENIA.zasilanieAwaryjne);
 });
 
@@ -327,4 +329,31 @@ test('nasza wycena odniesienia miesci sie w widelkach rynkowych', () => {
   const w = widelkiRynkowe({ kWp: 9, magazynKWh: 15 });
   assert.ok(nasza > w.min * 0.75 && nasza < w.max,
     `nasza wycena ${nasza} wobec widelek ${w.min}-${w.max}`);
+});
+
+test('pojemnosc magazynu zaokragla sie w gore do calych modulow', () => {
+  assert.equal(pojemnoscModulowa(0), 0);
+  assert.equal(pojemnoscModulowa(5.12), 5.12);
+  assert.equal(pojemnoscModulowa(13), 15.36, 'trzy moduly, bo polowy modulu nie da sie kupic');
+  assert.equal(pojemnoscModulowa(16), 20.48);
+  assert.equal(pojemnoscModulowa(15.36), 15.36, 'pelne moduly zostaja bez zmian');
+});
+
+test('cennik nie moze wycenic magazynu taniej niz sam sprzet w sklepie', () => {
+  // To byl realny blad: przy 13 kWh liniowa cena dawala 16 300 zl, a same moduly
+  // (trzy, bo tyle trzeba kupic) kosztuja w sklepie producenta 17 196 zl.
+  for (const kWh of [5, 10, 13, 15, 16, 20, 25, 30]) {
+    const nasz = pozycjeZCennika({ kWp: 0, magazynKWh: kWh }).magazyn;
+    const sklep = cenaSklepowaMagazynu(kWh).kwota;
+    assert.ok(nasz > sklep,
+      `${kWh} kWh: cennik ${nasz} zl nie pokrywa nawet sprzetu za ${sklep} zl`);
+  }
+});
+
+test('nietypowa pojemnosc kosztuje tyle, co kupione moduly', () => {
+  const trzynascie = pozycjeZCennika({ kWp: 0, magazynKWh: 13 }).magazyn;
+  const pelne = pozycjeZCennika({ kWp: 0, magazynKWh: 15.36 }).magazyn;
+  assert.equal(trzynascie, pelne, '13 i 15,36 kWh to te same trzy moduly');
+  assert.ok(pozycjeZCennika({ kWp: 0, magazynKWh: 16 }).magazyn > trzynascie, 'czwarty modul kosztuje');
+  assert.equal(pozycjeZCennika({ kWp: 0, magazynKWh: 0 }).magazyn, 0);
 });

@@ -53,6 +53,13 @@ test('odmien dziala dla dowolnego rzeczownika', () => {
 test('liczby dziesietne pisza sie z przecinkiem', () => {
   assert.equal(liczba(22.5), '22,5');
   assert.equal(liczba(15), '15');
+  assert.equal(liczba(15.36), '15,36');
+  // Bez zaokraglenia dzielenie zmiennoprzecinkowe wychodzilo na strone w calej okazalosci:
+  // "rezerwa awaryjna to 2,8569600000000004 kWh".
+  assert.equal(liczba(2.8569600000000004, 1), '2,9');
+  assert.equal(liczba(1.4284800000000002, 1), '1,4');
+  assert.equal(liczba(11.427840000000001), '11,43');
+  assert.equal(liczba(5.0), '5', 'calkowita nie dostaje wiszacego przecinka');
   assert.equal(proc(69.42, 1), '69,4%');
   assert.equal(proc(69.42), '69%');
 });
