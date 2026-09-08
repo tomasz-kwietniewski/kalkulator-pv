@@ -20,25 +20,42 @@ wynik, konwertując JSON na moduł ES (`export default {...}`). Dane są wbudowa
 w pliki źródłowe celowo - dzięki temu strona nie wykonuje żadnego zapytania sieciowego
 i działa otwarta z dysku.
 
-## Strefy taryfowe liczy `src/zones.js`, nie profil
+## Strefy taryfowe liczy `src/zones.js` z tabeli w taryfie OSD
 
-Pola `strefa_tania_g12` i `strefa_tania_g12w` w `data/profiles.js` **nie są już źródłem
-prawdy** - maski powstają z kalendarza (`maskiProfilu`), a pola zostają w danych jako
-materiał testowy: `test/zones.test.mjs` porównuje wygenerowaną maskę z zapisaną godzina
-po godzinie. Silnik i model cenowy dostają maskę w parametrze (`maskaStrefy`,
-`Uint8Array`), więc nie wiedzą już nic o profilu ani o nazwie grupy taryfowej.
+Maski stref powstają z kalendarza, a nie z danych: `maskiProfilu` buduje `Uint8Array`,
+który silnik i model cenowy dostają w parametrze (`maskaStrefy`). Nie wiedzą już nic
+o profilu ani o nazwie grupy taryfowej - dzięki temu da się dołożyć operatora i wgrać
+własne dane z innego roku.
 
-Test jest bramką bez wyjątków: każda godzina musi się zgadzać. Wcześniej sześć dni się
-rozjeżdżało - generator kończył czas letni 31.10.2025 zamiast w ostatnią niedzielę
-października (26.10), więc dawał tam blok popołudniowy 15-17 zamiast 13-15. Kalendarz ma
-rację (sezony taryfowe idą za zmianą czasu, co widać po drugiej granicy: 29.03.2026
-generator trafił poprawnie), więc **8.09.2026 poprawione zostały dane**, w `data/profiles.js`
-i `test/profiles_raw.json` naraz, po 24 godziny w G12 i 20 w G12w.
+**Źródłem prawdy jest tabela stref z taryfy operatora**, cytowana w `STREFY` razem
+z datą obowiązywania. Dla PGE Dystrybucja to pkt 2.2.8 taryfy na 2026 (tekst jednolity
+od 1.02.2026), grupy C12b/G12 oraz C12w/G12w/G12e:
 
-**Generator w prywatnym `zuzycie-pradu` ma ten błąd nadal.** Ponowne wygenerowanie profilu
-przywróci stare maski i test upadnie - wtedy poprawić generator, a nie test. Wyniki
-kalkulatora tej poprawki nie zauważyły (silnik liczy z kalendarza od commita 419e972),
-zmieniła się wyłącznie zgodność danych z modelem.
+| Sezon | Strefa nocna (tania) |
+|---|---|
+| Lato: 1 kwietnia - 30 września | 15-17 i 22-6 |
+| Zima: 1 października - 31 marca | 13-15 i 22-6 |
+| G12w dodatkowo: soboty, niedziele i dni ustawowo wolne | cała doba |
+
+**Sezon idzie z kalendarza, nie ze zmiany czasu.** To była pomyłka generatora
+w prywatnym `zuzycie-pradu` (`process_sofar.py`, `is_summer_dst`) i przez jeden dzień
+także tego repozytorium: 8.09.2026 poprawiliśmy dane pod zmianę czasu, zanim taryfa
+pokazała, że sezon wyznaczają daty. Skutek różnicy: 112 godzin w G12 i 80 w G12w między
+1.10.2025 a 31.03.2026, rachunek roczny o ok. 6 zł, udział taniej strefy 76,1% -> 75,9%.
+
+Pola `strefa_tania_g12` i `strefa_tania_g12w` **zostały usunięte** z `data/profiles.js`
+i `test/profiles_raw.json`. Zapisywały regułę generatora, czyli tę błędną, a odtwarzanie
+ich z `zones.js` dałoby test, który porównuje kod z samym sobą. Bramką jest teraz
+`test/zones.test.mjs` odtwarzający tabelę z taryfy wprost, razem z datami granicznymi
+(30.09/1.10 i 31.03/1.04). Materiałem z generatora zostaje maska `dzien_wolny` - ona
+jest niezależna i nadal porównywana godzina po godzinie.
+
+**Otwarte, do sprawdzenia na fakturze:** ta sama taryfa mówi, że zegary sterujące
+w układach pomiarowych „ustawia się według czasu zimowego i nie zmienia się w okresie
+obowiązywania czasu letniego", chyba że licznik potrafi utrzymać godziny stref sam.
+Gdyby u Tomasza obowiązywał wariant pierwszy, letnie okna wypadałyby w profilu
+o godzinę później (16-18 i 23-7). Model zakłada wariant drugi, bo licznik jest nowy
+i raportuje do CSIRE. Rozstrzygnie faktura z rozbiciem na strefy.
 
 ## Parametry skalibrowane - traktować ostrożnie
 

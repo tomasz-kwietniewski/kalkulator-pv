@@ -6,9 +6,12 @@
  * wlasnych danych (inny rok, inne dni wolne) i operatorow o innych oknach stref.
  *
  * Kalendarz jest liczony w UTC celowo: profil ma 24 godziny na dobe (365 x 24 = 8760),
- * bez zdublowanej i bez brakujacej godziny przy zmianie czasu. Pora roku wchodzi tu
- * osobno, przez czasLetni() - i wystarcza jej rozdzielczosc dobowa, bo zmiana czasu
- * wypada w nocy, a zalezne od niej okno jest popoludniowe.
+ * bez zdublowanej i bez brakujacej godziny przy zmianie czasu.
+ *
+ * Sezon taryfowy NIE ma nic wspolnego ze zmiana czasu - taryfa PGE Dystrybucja (pkt 2.2.8)
+ * wyznacza go datami: lato od 1 kwietnia do 30 wrzesnia, zima od 1 pazdziernika do 31 marca.
+ * Operatorzy bez podzialu sezonowego (Tauron, Energa, Stoen) maja jedno okno przez caly rok
+ * i dla nich sezony sa puste.
  */
 
 const GODZINA = 3600000;
@@ -65,35 +68,40 @@ export function dniWolne(rok) {
   return wolne;
 }
 
-const ostatniaNiedziela = (rok, miesiac) => {
-  const d = new Date(Date.UTC(rok, miesiac, 0));
-  d.setUTCDate(d.getUTCDate() - d.getUTCDay());
-  return iso(d);
-};
-
-/** Czas letni: od ostatniej niedzieli marca do ostatniej niedzieli pazdziernika. */
-export function czasLetni(dataISO) {
-  const rok = Number(dataISO.slice(0, 4));
-  return dataISO >= ostatniaNiedziela(rok, 3) && dataISO < ostatniaNiedziela(rok, 10);
+/**
+ * Sezon taryfowy dla daty. Zwraca 'lato', 'zima' albo null, gdy operator nie dzieli roku
+ * na sezony. Granice sa zapisane jako MM-DD, wiec porownanie na tekscie wystarcza.
+ */
+export function sezon(dataISO, sezony) {
+  if (!sezony) return null;
+  const mmdd = dataISO.slice(5);
+  return (mmdd >= sezony.lato.od && mmdd <= sezony.lato.do) ? 'lato' : 'zima';
 }
 
 /**
  * Okna taniej strefy jako dane, zeby operator o innych godzinach byl wpisem w tabeli,
  * a nie nowa funkcja. Kazde okno to [od, do) w godzinach lokalnych; okno przechodzace
- * przez polnoc zapisujemy wprost (od > do).
+ * przez polnoc zapisujemy wprost (od > do). Okna z klucza 'zawsze' obowiazuja caly rok,
+ * a 'lato'/'zima' dochodza do nich w swoim sezonie.
  *
- * PGE: noc 22:00-6:00 codziennie plus blok popoludniowy przesuwany z czasem letnim.
- * Ten sam uklad okien ma G12 i G12w - roznica jest w dniach wolnych.
+ * PGE: noc 22:00-6:00 codziennie plus blok popoludniowy, ktory w sezonie letnim stoi
+ * na 15-17, a w zimowym na 13-15. Ten sam uklad okien ma G12 i G12w - roznica jest
+ * w dniach wolnych.
  */
 const OKNA_PGE = {
   zawsze: [[22, 6]],
-  letni: [[15, 17]],
-  zimowy: [[13, 15]],
+  lato: [[15, 17]],
+  zima: [[13, 15]],
 };
 
 export const STREFY = {
   pge: {
     nazwa: 'PGE Dystrybucja',
+    // Taryfa PGE Dystrybucja S.A. na 2026, tekst jednolity od 1.02.2026, pkt 2.2.8:
+    // tabela stref dla C12b/G12 oraz C12w/G12w/G12e.
+    zrodlo: 'Taryfa PGE Dystrybucja S.A. na 2026, pkt 2.2.8',
+    obowiazujeOd: '2026-02-01',
+    sezony: { lato: { od: '04-01', do: '09-30' } },
     grupy: {
       G12: { okna: OKNA_PGE, dniWolneTanie: false },
       G12w: { okna: OKNA_PGE, dniWolneTanie: true },
@@ -133,7 +141,8 @@ export function maskaStrefy(grupa, definicja, startISO, godzin) {
       maska[h] = 1;
       continue;
     }
-    const okna = def.okna[czasLetni(data) ? 'letni' : 'zimowy'].concat(def.okna.zawsze);
+    const pora = sezon(data, definicja.sezony);
+    const okna = pora ? def.okna[pora].concat(def.okna.zawsze) : def.okna.zawsze;
     const godzina = chwila.getUTCHours();
     maska[h] = okna.some(([od, doGodz]) => wOknie(godzina, od, doGodz)) ? 1 : 0;
   }

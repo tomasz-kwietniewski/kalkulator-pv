@@ -1,22 +1,23 @@
 /**
  * Strefy taryfowe generowane z kalendarza.
  *
- * Bramka tego modulu: maski wygenerowane dla okresu profilu musza sie zgadzac
- * ze stringami zapisanymi w data/profiles.js i test/profiles_raw.json - godzina po
- * godzinie, bez zadnego wyjatku. Stringi pochodza z generatora w prywatnym repo
- * i to na nich policzone sa wszystkie dotychczasowe wyniki kalkulatora.
+ * Zrodlem prawdy jest tabela stref z taryfy OSD, nie zapisany string w profilu. Dla PGE
+ * Dystrybucja jest to pkt 2.2.8 taryfy na 2026 (tekst jednolity od 1.02.2026), ktory dla
+ * grup C12b/G12 oraz C12w/G12w/G12e podaje:
  *
- * Generator konczyl czas letni 31.10.2025 zamiast w ostatnia niedziele pazdziernika,
- * wiec szesc dni mialo blok popoludniowy 15-17 zamiast 13-15. Te godziny zostaly
- * w danych poprawione 8.09.2026 - patrz naglowek data/profiles.js. Gdy ten test
- * upadnie po ponownym wygenerowaniu profilu, to najpewniej wraca ten sam blad.
- */
-import test from 'node:test';
+ *   Lato (od 1 kwietnia do 30 wrzesnia):  strefa nocna 15-17 i 22-6
+ *   Zima (od 1 pazdziernika do 31 marca): strefa nocna 13-15 i 22-6
+ *   G12w dodatkowo: soboty, niedziele i dni ustawowo wolne - cala doba strefa nocna
+ *
+ * Testy nizej odtwarzaja te tabele wprost, razem z datami granicznymi sezonu. Wczesniej
+ * bramka porownywala maski z ciagami strefa_tania_* z profilu, ale te pochodzily
+ * z generatora, ktory sezon liczyl wedlug zmiany czasu - czyli blednie. Ciagi zostaly
+ * usuniete z danych; niezaleznym materialem z generatora zostaje maska dzien_wolny.
+ */import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import profile from '../data/profiles.js';
 import {
-  wielkanoc, swietaPolskie, dniWolne, czasLetni, STREFY, maskaStrefy, maskiProfilu,
+  wielkanoc, swietaPolskie, dniWolne, sezon, STREFY, maskaStrefy, maskiProfilu,
 } from '../src/zones.js';
 
 const START = '2025-08-01';
@@ -63,22 +64,32 @@ test('dni wolne to soboty, niedziele i swieta', () => {
   assert.ok(w.has('2025-11-11'), 'wtorek 11.11 jest swietem');
 });
 
-test('czas letni trwa od ostatniej niedzieli marca do ostatniej niedzieli pazdziernika', () => {
-  assert.equal(czasLetni('2026-03-28'), false);
-  assert.equal(czasLetni('2026-03-29'), true);
-  assert.equal(czasLetni('2025-10-25'), true);
-  assert.equal(czasLetni('2025-10-26'), false);
-  assert.equal(czasLetni('2025-12-31'), false);
+test('sezon letni trwa od 1 kwietnia do 30 wrzesnia (pkt 2.2.8 taryfy PGE)', () => {
+  const sezony = STREFY.pge.sezony;
+  assert.equal(sezon('2026-03-31', sezony), 'zima');
+  assert.equal(sezon('2026-04-01', sezony), 'lato');
+  assert.equal(sezon('2025-09-30', sezony), 'lato');
+  assert.equal(sezon('2025-10-01', sezony), 'zima');
+  assert.equal(sezon('2025-12-31', sezony), 'zima');
+  // zmiana czasu nie ma tu nic do rzeczy - 26.10 i 29.03 sa w srodku sezonu
+  assert.equal(sezon('2025-10-26', sezony), 'zima');
+  assert.equal(sezon('2026-03-29', sezony), 'zima');
+  // operator bez podzialu sezonowego ma jedno okno przez caly rok
+  assert.equal(sezon('2026-07-01', null), null);
 });
 
-test('maska G12: noc 22-6 i blok popoludniowy zalezny od pory roku', () => {
-  const letnia = maskaStrefy('G12', STREFY.pge, '2025-08-01', 24);
-  assert.deepEqual([...letnia].map((v, i) => (v ? i : -1)).filter((i) => i >= 0),
-    [0, 1, 2, 3, 4, 5, 15, 16, 22, 23]);
+test('maska G12 odtwarza tabele stref: lato 15-17, zima 13-15, noc 22-6', () => {
+  const tanieGodziny = (dataISO) => [...maskaStrefy('G12', STREFY.pge, dataISO, 24)]
+    .map((v, i) => (v ? i : -1)).filter((i) => i >= 0);
+  const LATO = [0, 1, 2, 3, 4, 5, 15, 16, 22, 23];
+  const ZIMA = [0, 1, 2, 3, 4, 5, 13, 14, 22, 23];
 
-  const zimowa = maskaStrefy('G12', STREFY.pge, '2025-12-01', 24);
-  assert.deepEqual([...zimowa].map((v, i) => (v ? i : -1)).filter((i) => i >= 0),
-    [0, 1, 2, 3, 4, 5, 13, 14, 22, 23]);
+  assert.deepEqual(tanieGodziny('2025-08-01'), LATO);
+  assert.deepEqual(tanieGodziny('2025-09-30'), LATO, 'ostatni dzien lata');
+  assert.deepEqual(tanieGodziny('2025-10-01'), ZIMA, 'pierwszy dzien zimy');
+  assert.deepEqual(tanieGodziny('2025-12-01'), ZIMA);
+  assert.deepEqual(tanieGodziny('2026-03-31'), ZIMA, 'ostatni dzien zimy');
+  assert.deepEqual(tanieGodziny('2026-04-01'), LATO, 'pierwszy dzien lata');
 });
 
 test('maska G12w: dzien wolny tani przez cala dobe', () => {
@@ -90,21 +101,6 @@ test('maska G12w: dzien wolny tani przez cala dobe', () => {
 
 test('G11 nie ma stref', () => {
   assert.equal(maskaStrefy('G11', STREFY.pge, START, 24), null);
-});
-
-test('BRAMKA: maski dla okresu profilu zgadzaja sie z zapisanymi w data/profiles.js', () => {
-  const maski = maskiProfilu(profile);
-  assert.equal(maski.G12.length, GODZIN);
-  assert.equal(maski.G12w.length, GODZIN);
-  assert.deepEqual(roznice(maski.G12, profile.strefa_tania_g12), []);
-  assert.deepEqual(roznice(maski.G12w, profile.strefa_tania_g12w), []);
-});
-
-test('BRAMKA: ten sam kalendarz obowiazuje profil surowy z test/profiles_raw.json', () => {
-  const surowy = JSON.parse(readFileSync(new URL('./profiles_raw.json', import.meta.url)));
-  const maski = maskiProfilu(surowy);
-  assert.deepEqual(roznice(maski.G12, surowy.strefa_tania_g12), []);
-  assert.deepEqual(roznice(maski.G12w, surowy.strefa_tania_g12w), []);
 });
 
 test('BRAMKA: dni wolne z kalendarza zgadzaja sie z maska dzien_wolny w profilu', () => {

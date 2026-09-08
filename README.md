@@ -52,8 +52,13 @@ z tym, co naprawdę pokazały liczniki:
 |---|---|---|---|
 | Pobór z sieci | 5 604 kWh | 5 642 kWh | -0,7% |
 | Oddanie do sieci | 2 354 kWh | 2 236 kWh | +5,3% |
-| Udział taniej strefy G12w | 76,1% | 77,5% | -1,4 pkt proc. |
+| Udział taniej strefy G12w | 75,9% | 77,5% | -1,6 pkt proc. |
 | Największy błąd miesięczny | - | - | 74 kWh |
+
+Uwaga do wiersza o strefach: 77,5% policzył generator w prywatnym repozytorium, a robił
+to według zmiany czasu zamiast według sezonu z taryfy (lato 1.04 - 30.09). Kalkulator
+liczy strefy zgodnie z taryfą, więc te dwie liczby dzieli nie tylko dokładność modelu,
+ale i definicja sezonu - do zestrojenia przy następnym przeliczaniu profili.
 
 Dwa parametry modelu (pobór własny układu i poziom dobierania magazynu z sieci)
 są skalibrowane na tym samym roku, więc roczna zgodność jest częściowo z definicji.
@@ -75,7 +80,7 @@ który nigdy nie trafia do serwera.
 ```
 index.html            strona
 src/engine.js         symulacja 8760 h: PV, dom, magazyn, siec (bez DOM, testowalny z Node)
-src/zones.js          strefy taryfowe z kalendarza: swieta, dni wolne, czas letni
+src/zones.js          strefy taryfowe z kalendarza: swieta, dni wolne, sezon taryfowy
 src/pricing.js        taryfy PGE, dystrybucja, oplaty, net-billing, taryfa dynamiczna
 src/economics.js      pozycje kosztowe, dotacje, ulga, kaskada nakladu, czas zwrotu
 src/charts.js         wykresy, znacznik punktu zwrotu, diagram przeplywu energii
