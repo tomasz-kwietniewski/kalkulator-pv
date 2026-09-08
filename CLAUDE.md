@@ -83,6 +83,31 @@ Mnożniki orientacji w `ORIENTACJE` (silnik) i mnożnik nachylenia w `src/pv.js`
 z tej samej siatki PVGIS. Nie mnożyć ich przez siebie inaczej niż dziś: mnożnik nachylenia
 jest liczony **względem tej samej orientacji**, żeby orientacja nie weszła dwa razy.
 
+## Import wlasnego profilu: `src/import.js`
+
+Parser jest zbudowany wokol zalozenia, ze **sie pomyli**, i to jest jego cala konstrukcja:
+kolumny proponuje, nie narzuca; po wczytaniu rysuje profil (usredniona doba i dwanascie
+miesiecy), bo wzrokowa kontrola wylapie zla kolumne szybciej niz jakikolwiek regex;
+podaje sume kWh do porownania z faktura. Nie zamieniac tego na ciche "wczytano poprawnie".
+
+Rzeczy, ktore juz raz byly zle albo latwo je zepsuc:
+
+- **Po poprawieniu wyboru kolumny profil musi sie przeliczyc.** Pierwsza wersja robila to
+  tylko wtedy, gdy poprzednia proba sie udala - czyli po bledzie uzytkownik poprawial
+  kolumne, a komunikat zostawal na ekranie.
+- **Plik moze byc w Windows-1250** (eksporty z polskich portali). Czytamy przez TextDecoder
+  z fatal:true i dopiero po bledzie schodzimy do cp1250, zeby naglowek "Zuzycie" nie
+  przyszedl z krzakami i nie zepsul propozycji kolumn.
+- **Dziury do 48 godzin uzupelniamy i mowimy ile ich bylo.** Dluzsza przerwa to blad -
+  uzupelnianie jej byloby zmyslaniem danych.
+- **Plik z okresu, gdy uzytkownik mial juz PV, jest odrzucany z wyjasnieniem.** Taki plik
+  pokazuje pobor z sieci, a nie zuzycie domu, wiec autokonsumpcja wyszlaby zanizona.
+  To pytanie stoi w formularzu jako pole wyboru i ma tam zostac.
+- **Dni tygodnia bierzemy z kalendarza 2025/26.** Plik z innego roku ma weekendy
+  przesuniete o dzien-dwa wzgledem naszej siatki i tak jest napisane w podsumowaniu.
+  Gdyby to kiedys przeszkadzalo, alternatywa jest obracanie danych po dniu tygodnia
+  zamiast po dacie - ale wtedy rozjezdzaja sie pory roku.
+
 ## Parametry skalibrowane - traktować ostrożnie
 
 Dwie wartości w `src/engine.js` nie pochodzą z kart katalogowych, tylko zostały dobrane

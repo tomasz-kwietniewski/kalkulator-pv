@@ -80,6 +80,7 @@ który nigdy nie trafia do serwera.
 ```
 index.html            strona
 src/engine.js         symulacja 8760 h: PV, dom, magazyn, siec (bez DOM, testowalny z Node)
+src/import.js         wczytywanie wlasnego profilu godzinowego z pliku CSV
 src/pv.js             wybor profilu naslonecznienia i mnoznik nachylenia dachu
 src/zones.js          strefy taryfowe z kalendarza: swieta, dni wolne, sezon taryfowy
 src/pricing.js        taryfy pieciu operatorow, oplaty, net-billing, taryfa dynamiczna
@@ -190,8 +191,21 @@ sprawdź listę obsługiwanych urządzeń, zanim wybierzesz falownik** - a nie o
 
 ## Dla kogo ten wynik jest wiarygodny
 
-Kalkulator liczy autokonsumpcję na godzinowym profilu produkcji, więc jakość wyniku zależy
-od tego, skąd ten profil pochodzi:
+Kalkulator liczy autokonsumpcję godzina po godzinie, więc jakość wyniku zależy od tego,
+skąd biorą się dwa profile: produkcji i zużycia.
+
+**Profil zużycia:**
+
+- **Twój własny plik z licznika** - wariant najmocniejszy i jedyny, który opisuje
+  naprawdę Twój dom. Wgrywasz CSV (Moje IRE, eLicznik, aplikacja sprzedawcy), a kalkulator
+  pokazuje wczytany profil na wykresie, zanim cokolwiek policzy. Plik zostaje
+  w przeglądarce - nie jest nigdzie wysyłany ani zapisywany, nie ma go też w linku
+  z parametrami.
+- **Profil domu odniesienia** - kształt zużycia domu w pełni elektrycznego z pompami
+  ciepła, przeskalowany do Twojego rocznego zużycia. Im bardziej Twój dom przypomina ten
+  wzorzec, tym lepiej.
+
+**Profil produkcji:**
 
 - **Profil zmierzony (dom odniesienia, Musuły)** - domyślny. Realny rok pracy instalacji
   9 kWp: 1 008 kWh z każdego kWp, razem z kształtem dachu, zacienieniem i przerwami

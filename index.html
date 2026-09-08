@@ -165,6 +165,12 @@
 
   details{margin:18px 0; border:1px solid var(--line); border-radius:12px; padding:0 18px;}
   details[open]{padding-bottom:16px;}
+  .importblad{color:#a4321f; background:#fdf1ee; border:1px solid #f0c6bc; border-radius:10px;
+    padding:10px 12px; font-size:13.5px; margin:12px 0 0;}
+  #importTabela{font-size:12px; border-collapse:collapse; margin:14px 0;}
+  #importTabela td, #importTabela th{border:1px solid var(--line); padding:3px 7px; white-space:nowrap;}
+  #importTabela th{background:var(--tlo-karty); font-weight:600;}
+  #importPodsumowanie{font-size:13.5px; background:var(--tlo-karty); border-radius:10px; padding:10px 12px;}
   summary{cursor:pointer; padding:14px 0; font-weight:600; font-size:14.5px;}
   .btnrow{display:flex; flex-wrap:wrap; gap:10px; margin:18px 0;}
   button.akcja{border:1px solid var(--line); background:#fff; padding:10px 16px; border-radius:10px;
@@ -236,6 +242,46 @@
         </select>
       </div>
     </div>
+    <details class="noprint" id="importBlok">
+      <summary>Mam godzinowy plik z licznika - policz na moich danych</summary>
+      <p class="hint">Plik zostaje w Twojej przeglądarce. Nie wysyłamy go nigdzie, nie zapisujemy
+        i nie ma go w linku, który kopiujesz. Pasuje eksport z portalu Moje IRE, z eLicznika
+        albo z aplikacji sprzedawcy - CSV z datą i zużyciem, najlepiej za pełne dwanaście miesięcy.</p>
+      <input type="file" id="plikProfilu" accept=".csv,.txt,text/csv,text/plain">
+      <div id="importPodglad" hidden>
+        <div class="tabwrap"><table id="importTabela"></table></div>
+        <div class="grid">
+          <div>
+            <label for="kolData">Kolumna z datą</label>
+            <select id="kolData"></select>
+          </div>
+          <div>
+            <label for="kolWartosc">Kolumna z wartością</label>
+            <select id="kolWartosc"></select>
+          </div>
+          <div>
+            <label for="kolJednostka">Co jest w tej kolumnie</label>
+            <select id="kolJednostka">
+              <option value="kWh">Energia w interwale (kWh)</option>
+              <option value="kW">Średnia moc (kW)</option>
+            </select>
+          </div>
+        </div>
+        <p class="hint" id="importPowod"></p>
+        <div class="checkrow">
+          <input type="checkbox" id="importZPV">
+          <label for="importZPV">Ten plik pochodzi z okresu, gdy miałem już fotowoltaikę</label>
+        </div>
+        <button type="button" id="btnWczytaj">Wczytaj ten profil</button>
+      </div>
+      <div id="importWynik" hidden>
+        <p id="importPodsumowanie"></p>
+        <div class="cwrap"><canvas id="wykresImportDoba"></canvas></div>
+        <div class="cwrap"><canvas id="wykresImportMiesiace"></canvas></div>
+        <button type="button" id="btnUsunProfil">Wróć do profilu odniesienia</button>
+      </div>
+      <p id="importBlad" class="importblad" hidden></p>
+    </details>
   </div>
 
   <h2><span class="n">2</span>Instalacja, którą rozważasz</h2>

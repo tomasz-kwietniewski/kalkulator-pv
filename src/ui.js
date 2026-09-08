@@ -9,12 +9,14 @@ import { symuluj, krzywaMagazynu } from './engine.js';
 import { rachunekRoczny, DYNAMICZNA, OPERATORZY } from './pricing.js';
 import { maskiProfilu, STREFY } from './zones.js';
 import { PROFILE_PV, profilPv, mnoznikNachylenia, NACHYLENIA, ZRODLO } from './pv.js';
+import { parsujTekst, proponujKolumny, zbudujProfil, BladImportu } from './import.js';
 import {
   pozycjeZCennika, sumaPozycji, rozdzielKwote, POZYCJE_KOSZTU,
   kaskadaNakladu, zwrot, zwrotDwutorowo, dotacjaPME2, cenaSklepowaMagazynu,
   WIDELKI_OFERT_2025, WIDELKI_EPS, DOTACJE, PME2,
 } from './economics.js';
 import {
+  rysujProfilDoby, rysujProfilMiesiecy,
   rysujMiesiace, rysujZwrot, rysujNasycenie, kolumnaPrzeplywu,
   wszystkieWykresy, odswiezWykresy, KOLORY,
 } from './charts.js';
@@ -102,9 +104,15 @@ function czytajPola() {
     orientacja,
     nachylenie,
     mnoznikNachylenia: mnoznikNachylenia(nachylenie, orientacja),
-    // Profil produkcji podmieniamy na wybrana lokalizacje - reszta profilu (dom, auto,
-    // dni wolne) pochodzi ze zmierzonego roku i nie zalezy od miejsca.
-    profil: { ...profile, pv_per_kwp: profilPv(lokalizacja) },
+    // Profil produkcji podmieniamy na wybrana lokalizacje, a ksztalt zuzycia domu -
+    // na wczytany z pliku, jesli uzytkownik go podal. Reszta (auto, dni wolne) zostaje
+    // ze zmierzonego roku.
+    profil: {
+      ...profile,
+      pv_per_kwp: profilPv(lokalizacja),
+      ...(profilWlasny ? { house_per_MWh: profilWlasny.perMWh } : {}),
+    },
+    wlasnyProfil: !!profilWlasny,
     kWp: +$('kwp').value,
     magazynKWh: +$('magazyn').value,
     grupa,
@@ -168,6 +176,131 @@ function policzWariant(p, kWp, magazynKWh) {
     rce, dynamiczna: p.dynamiczna, czapka: DYNAMICZNA.czapka, netBilling: kWp > 0,
   });
   return { wynik, rachunek };
+}
+
+/* --- wlasny profil z licznika ---------------------------------------------------- */
+
+/**
+ * Wczytany plik i zbudowany z niego profil. Trzymamy je tylko w pamieci karty:
+ * plik nigdzie nie jedzie, nie wchodzi do adresu i nie jest zapisywany.
+ */
+let plikProfilu = null;
+let profilWlasny = null;
+
+const $blad = (tekst) => {
+  const el = $('importBlad');
+  el.textContent = tekst;
+  el.hidden = !tekst;
+};
+
+/**
+ * Eksporty z polskich portali bywaja w Windows-1250 i wtedy naglowek "Zuzycie" przychodzi
+ * z krzakami, przez co propozycja kolumn traci sens. Probujemy wiec najpierw UTF-8,
+ * a gdy sie nie da - cp1250.
+ */
+async function odczytajTekst(plik) {
+  const bufor = await plik.arrayBuffer();
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bufor);
+  } catch {
+    return new TextDecoder('windows-1250').decode(bufor);
+  }
+}
+
+function pokazPodglad() {
+  const { naglowki, wiersze } = plikProfilu;
+  const komorki = (w) => w.map((k) => `<td>${k.replace(/[<>&]/g, '')}</td>`).join('');
+  $('importTabela').innerHTML = `<tr>${naglowki.map((n) => `<th>${n}</th>`).join('')}</tr>`
+    + wiersze.slice(0, 5).map((w) => `<tr>${komorki(w)}</tr>`).join('');
+
+  const propozycja = proponujKolumny(naglowki, wiersze);
+  for (const [id, wybrana] of [['kolData', propozycja.data], ['kolWartosc', propozycja.wartosc]]) {
+    $(id).innerHTML = naglowki
+      .map((n, k) => `<option value="${k}"${k === wybrana ? ' selected' : ''}>${n}</option>`)
+      .join('');
+  }
+  $('kolJednostka').value = propozycja.jednostka;
+  $('importPowod').textContent = propozycja.powod;
+  $('importPodglad').hidden = false;
+  $('importWynik').hidden = true;
+  $blad('');
+}
+
+function wczytajProfil() {
+  if ($('importZPV').checked) {
+    $blad('Plik z licznika z okresu, gdy masz już fotowoltaikę, pokazuje pobór z sieci,'
+      + ' a nie zużycie domu - brakuje w nim tego, co zjadły panele. Policzenie na nim'
+      + ' autokonsumpcji zaniżyłoby wynik. Potrzebny jest plik sprzed instalacji albo'
+      + ' zużycie całego domu z falownika lub systemu zarządzania energią.');
+    $('importWynik').hidden = true;
+    profilWlasny = null;
+    przelicz();
+    return;
+  }
+  try {
+    const wynik = zbudujProfil(plikProfilu, {
+      data: +$('kolData').value,
+      wartosc: +$('kolWartosc').value,
+      jednostka: $('kolJednostka').value,
+    });
+    profilWlasny = wynik;
+    $blad('');
+    $('zuzycie').value = Math.round(wynik.sumaKWh);
+    pokazWczytanyProfil(wynik);
+    przelicz();
+  } catch (e) {
+    if (!(e instanceof BladImportu)) throw e;
+    profilWlasny = null;
+    $('importWynik').hidden = true;
+    $blad(e.message);
+    przelicz();
+  }
+}
+
+/** Podsumowanie liczbowe i dwa wykresy - to jest wlasciwa walidacja importu. */
+function pokazWczytanyProfil(wynik) {
+  const doba = new Array(24).fill(0);
+  const miesiace = [];
+  const DNI = [31, 30, 31, 30, 31, 31, 28, 31, 30, 31, 30, 31];
+  wynik.godziny.forEach((v, i) => { doba[i % 24] += v / 365; });
+  let h = 0;
+  for (const dni of DNI) {
+    let suma = 0;
+    for (let i = 0; i < dni * 24; i++) suma += wynik.godziny[h++];
+    miesiace.push(suma);
+  }
+  rysujProfilDoby($('wykresImportDoba'), doba);
+  rysujProfilMiesiecy($('wykresImportMiesiace'), miesiace);
+
+  const czesci = [
+    `Wczytano <b>${liczba(wynik.godzinWczytanych)}</b> godzin, suma <b>${kwh(wynik.sumaKWh)}</b>`,
+    `dane co ${wynik.interwalMinut} min, początek ${wynik.startISO}`,
+  ];
+  if (wynik.godzinUzupelnionych) {
+    czesci.push(`${liczba(wynik.godzinUzupelnionych)} godzin bez danych uzupełniono średnią z sąsiednich`);
+  }
+  const uwagi = [
+    'Porównaj tę sumę z fakturą - jeśli się zgadza, to Twój dom.',
+    'Dni tygodnia bierzemy z kalendarza 2025/26, więc przy pliku z innego roku'
+      + ' weekendy wypadają o dzień lub dwa obok.',
+  ];
+  if (+$('auto').value > 0) {
+    uwagi.push('Jeśli ładowanie auta jest już w tym pliku, ustaw przebieg na zero,'
+      + ' żeby nie policzyć go dwa razy.');
+  }
+  $('importPodsumowanie').innerHTML = `${czesci.join(', ')}.<br>`
+    + `<span style="color:var(--faint)">${uwagi.join(' ')}</span>`;
+  $('importWynik').hidden = false;
+}
+
+function usunProfilWlasny() {
+  profilWlasny = null;
+  plikProfilu = null;
+  $('plikProfilu').value = '';
+  $('importPodglad').hidden = true;
+  $('importWynik').hidden = true;
+  $blad('');
+  przelicz();
 }
 
 function przelicz() {
@@ -730,6 +863,24 @@ function start() {
       if (id === 'lokalizacja') opiszLokalizacje($('lokalizacja').value);
       przelicz();
     });
+  });
+  $('plikProfilu').addEventListener('change', async (zdarzenie) => {
+    const plik = zdarzenie.target.files[0];
+    if (!plik) return;
+    try {
+      plikProfilu = parsujTekst(await odczytajTekst(plik));
+      pokazPodglad();
+    } catch (e) {
+      if (!(e instanceof BladImportu)) throw e;
+      $blad(e.message);
+    }
+  });
+  $('btnWczytaj').addEventListener('click', wczytajProfil);
+  $('btnUsunProfil').addEventListener('click', usunProfilWlasny);
+  // Przeliczamy przy kazdej zmianie wyboru kolumn, takze po nieudanej probie - inaczej
+  // uzytkownik poprawia kolumne, a na ekranie dalej stoi stary komunikat o bledzie.
+  ['kolData', 'kolWartosc', 'kolJednostka'].forEach((id) => {
+    $(id).addEventListener('change', () => { if (plikProfilu) wczytajProfil(); });
   });
   $('btnCennik').addEventListener('click', () => { kosztRecznie = false; przelicz(); });
   // Przycisk wstawiajacy szacunek dotacji powstaje razem z trescia bloku, wiec

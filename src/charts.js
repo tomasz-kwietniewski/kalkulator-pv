@@ -172,6 +172,59 @@ export function rysujMiesiace(canvas, miesiace) {
 }
 
 /**
+ * Wczytany profil: usredniona doba i dwanascie miesiecy.
+ *
+ * To jest wlasciwa walidacja importu - wzrokowa, nie regexowa. Jesli dane weszly dobrze,
+ * widac dom: poranek, wieczor, zima wyzej niz lato. Jesli parser trafil w zla kolumne,
+ * wykres jest absurdalny i widac to w sekunde.
+ */
+export function rysujProfilDoby(canvas, doba) {
+  rysuj(canvas, {
+    type: 'line',
+    data: {
+      labels: doba.map((_, h) => `${h}:00`),
+      datasets: [{
+        label: 'średnia doba (kWh)',
+        data: doba.map((v) => Math.round(v * 100) / 100),
+        borderColor: KOLORY.koral,
+        backgroundColor: 'rgba(233,109,94,.12)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 0,
+      }],
+    },
+    options: {
+      ...WSPOLNE,
+      scales: {
+        y: { beginAtZero: true, grid: { color: KOLORY.siatka }, ticks: { callback: (v) => v + ' kWh' } },
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 12 } },
+      },
+    },
+  });
+}
+
+export function rysujProfilMiesiecy(canvas, miesiace) {
+  rysuj(canvas, {
+    type: 'bar',
+    data: {
+      labels: MIESIACE,
+      datasets: [{
+        label: 'zużycie w miesiącu (kWh)',
+        data: miesiace.map((v) => Math.round(v)),
+        backgroundColor: KOLORY.koral,
+      }],
+    },
+    options: {
+      ...WSPOLNE,
+      scales: {
+        y: { beginAtZero: true, grid: { color: KOLORY.siatka }, ticks: { callback: (v) => v + ' kWh' } },
+        x: { grid: { display: false } },
+      },
+    },
+  });
+}
+
+/**
  * Skumulowany bilans w czasie, ze znacznikami punktow zwrotu.
  *
  * Os X jest liczbowa, a nie kategoryjna: punkt zwrotu wypada w ulamku roku (np. 7,4)
