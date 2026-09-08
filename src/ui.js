@@ -10,6 +10,7 @@ import { rachunekRoczny, DYNAMICZNA, OPERATORZY } from './pricing.js';
 import { maskiProfilu, STREFY } from './zones.js';
 import { PROFILE_PV, profilPv, mnoznikNachylenia, NACHYLENIA, ZRODLO } from './pv.js';
 import { parsujTekst, proponujKolumny, zbudujProfil, BladImportu } from './import.js';
+import { DOMY, profilZuzycia, opisDomu } from './domy.js';
 import {
   pozycjeZCennika, sumaPozycji, rozdzielKwote, POZYCJE_KOSZTU,
   kaskadaNakladu, zwrot, zwrotDwutorowo, dotacjaPME2, cenaSklepowaMagazynu,
@@ -67,7 +68,7 @@ const POLE_POZYCJI = {
   panele: 'kosztPanele', falownik: 'kosztFalownik', magazyn: 'kosztMagazyn', eps: 'kosztEps',
 };
 
-const POLA = ['zuzycie', 'auto', 'lokalizacja', 'orientacja', 'nachylenie', 'kwp', 'magazyn',
+const POLA = ['ogrzewanie', 'zuzycie', 'auto', 'lokalizacja', 'orientacja', 'nachylenie', 'kwp', 'magazyn',
   'operator', 'grupa', 'eps',
   'kosztPanele', 'kosztFalownik', 'kosztMagazyn', 'kosztEps', 'koszt',
   'dotacja', 'pit', 'wzrostCen', 'rezerwa', 'dobieranie', 'podatnicy',
@@ -93,6 +94,7 @@ let proporcjeKosztu = null;
 function czytajPola() {
   const operator = $('operator').value;
   const lokalizacja = $('lokalizacja').value;
+  const ogrzewanie = $('ogrzewanie').value;
   const orientacja = $('orientacja').value;
   const nachylenie = +$('nachylenie').value;
   const grupa = $('grupa').value;
@@ -101,16 +103,18 @@ function czytajPola() {
     zuzycieDomuKWh: +$('zuzycie').value,
     poborAutaKWh: +$('auto').value * KWH_NA_KM,
     lokalizacja,
+    ogrzewanie,
     orientacja,
     nachylenie,
     mnoznikNachylenia: mnoznikNachylenia(nachylenie, orientacja),
     // Profil produkcji podmieniamy na wybrana lokalizacje, a ksztalt zuzycia domu -
     // na wczytany z pliku, jesli uzytkownik go podal. Reszta (auto, dni wolne) zostaje
     // ze zmierzonego roku.
+    // Wlasny plik z licznika wygrywa z archetypem - to sa dane, a nie rekonstrukcja.
     profil: {
       ...profile,
       pv_per_kwp: profilPv(lokalizacja),
-      ...(profilWlasny ? { house_per_MWh: profilWlasny.perMWh } : {}),
+      house_per_MWh: profilWlasny ? profilWlasny.perMWh : profilZuzycia(ogrzewanie),
     },
     wlasnyProfil: !!profilWlasny,
     kWp: +$('kwp').value,
@@ -247,6 +251,7 @@ function wczytajProfil() {
     $blad('');
     $('zuzycie').value = Math.round(wynik.sumaKWh);
     pokazWczytanyProfil(wynik);
+    opiszOgrzewanie();
     przelicz();
   } catch (e) {
     if (!(e instanceof BladImportu)) throw e;
@@ -300,6 +305,7 @@ function usunProfilWlasny() {
   $('importPodglad').hidden = true;
   $('importWynik').hidden = true;
   $blad('');
+  opiszOgrzewanie();
   przelicz();
 }
 
@@ -834,6 +840,8 @@ function wypelnijListy() {
       : `${pr.nazwa} - model PVGIS`;
     return `<option value="${pr.id}">${etykieta} (${pr.uzyskRoczny} kWh/kWp)</option>`;
   }).join('');
+  $('ogrzewanie').innerHTML = DOMY
+    .map((d) => `<option value="${d.id}">${d.nazwa}</option>`).join('');
   $('nachylenie').innerHTML = NACHYLENIA
     .map((n) => `<option value="${n}"${n === 35 ? ' selected' : ''}>${n}°</option>`).join('');
 }
@@ -846,10 +854,18 @@ function opiszLokalizacje(id) {
     : `${pr.opis} Dane: ${ZRODLO.nazwa}, ${ZRODLO.atrybucja}.`;
 }
 
+/** Ksztalt zuzycia z pliku uzytkownika przykrywa archetyp - trzeba to powiedziec wprost. */
+function opiszOgrzewanie() {
+  $('ogrzewanieHint').textContent = profilWlasny
+    ? 'Liczymy na Twoim pliku z licznika, więc ten wybór nic teraz nie zmienia.'
+    : opisDomu($('ogrzewanie').value);
+}
+
 function start() {
   wypelnijListy();
   odtworzZAdresu();
   opiszLokalizacje($('lokalizacja').value);
+  opiszOgrzewanie();
   dopasujTaryfyDoOperatora();
   POLA.forEach((id) => {
     const el = $(id);
@@ -861,6 +877,7 @@ function start() {
       if (['kwp', 'magazyn', 'eps'].includes(id)) kosztRecznie = false;
       if (id === 'operator') dopasujTaryfyDoOperatora();
       if (id === 'lokalizacja') opiszLokalizacje($('lokalizacja').value);
+      if (id === 'ogrzewanie') opiszOgrzewanie();
       przelicz();
     });
   });

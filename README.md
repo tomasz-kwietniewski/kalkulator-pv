@@ -80,6 +80,7 @@ który nigdy nie trafia do serwera.
 ```
 index.html            strona
 src/engine.js         symulacja 8760 h: PV, dom, magazyn, siec (bez DOM, testowalny z Node)
+src/domy.js           archetypy ogrzewania z dekompozycji zmierzonego roku
 src/import.js         wczytywanie wlasnego profilu godzinowego z pliku CSV
 src/pv.js             wybor profilu naslonecznienia i mnoznik nachylenia dachu
 src/zones.js          strefy taryfowe z kalendarza: swieta, dni wolne, sezon taryfowy
@@ -205,6 +206,10 @@ skąd biorą się dwa profile: produkcji i zużycia.
   ciepła, przeskalowany do Twojego rocznego zużycia. Im bardziej Twój dom przypomina ten
   wzorzec, tym lepiej.
 
+- **Archetyp ogrzewania** - rekonstrukcja. Ten sam zmierzony rok rozłożony na składnik
+  bytowy i grzewczy, a potem złożony z powrotem dla innego sposobu ogrzewania. Kształty
+  są zmierzone, zmienia się proporcja między nimi.
+
 **Profil produkcji:**
 
 - **Profil zmierzony (dom odniesienia, Musuły)** - domyślny. Realny rok pracy instalacji
@@ -222,6 +227,37 @@ nie błąd modelu - ale trzeba o tym wiedzieć, czytając wykres miesięczny.
 Mnożniki za ustawienie dachu też pochodzą teraz z PVGIS (siatka nachyleń i azymutów dla
 środkowej Polski), a nie z oszacowania. Przy okazji wyszło, że dach wschód-zachód traci
 21%, a nie 15%, jak zakładała poprzednia wersja.
+
+## Jak liczymy dom ogrzewany inaczej
+
+Zmierzony rok domu odniesienia rozkładamy na dwa składniki, regresją zużycia dobowego
+względem temperatury (Open-Meteo ERA5 dla tego samego roku):
+
+- **próg grzewczy wyszedł z danych na 15,5°C**, ale jest słabo określony - progi od 15,0
+  do 16,5°C tłumaczą dane praktycznie tak samo dobrze, a R² całej regresji to 0,555.
+  Podajemy to wprost, zamiast udawać precyzję;
+- **składnik bytowy: 6 509 kWh rocznie** (kształt doby wzięty z dni ciepłych, bo tylko
+  wtedy widać sam dom bez grzania), **składnik grzewczy: 4 943 kWh prądu**.
+
+Z tego powstają cztery warianty do wyboru:
+
+| Wariant | Ogrzewanie w rocznym zużyciu | Autokonsumpcja przy 9 kWp i 15 kWh | Zwrot |
+|---|---|---|---|
+| Pompa ciepła (profil zmierzony) | 43% | 70% | 4,7 roku |
+| Ogrzewanie elektryczne bez pompy | 75% | 65% | 4,9 roku |
+| Ogrzewanie elektryczne akumulacyjne (nocne) | 75% | **47%** | **6,7 roku** |
+| Ogrzewanie nieelektryczne (gaz, pellet, węgiel) | 0% | 76% | 4,5 roku |
+
+Najciekawszy jest wiersz trzeci: **ogrzewanie akumulacyjne obniża autokonsumpcję z 70%
+na 47% i wydłuża zwrot o dwa lata**, bo prąd idzie nocą, kiedy fotowoltaika nie pracuje.
+Sam rachunek bez instalacji jest za to najniższy z całej czwórki (9 007 zł wobec 11 205),
+bo całe grzanie wpada w tanią strefę.
+
+**Czego ta rekonstrukcja nie wie:** przeliczenie prądu pompy na ciepło opiera się na
+modelu COP (ułamek sprawności Carnota, zasilanie 35°C), z którego wychodzi sezonowy COP
+3,9. To założenie, nie pomiar. W zmierzonym roku **nie widać przyspieszenia zużycia przy
+mrozie** - nadwyżka na stopień jest podobna przy -10°C i przy +8°C - więc nie modelujemy
+załamania COP, choć teoria by je przewidywała.
 
 ## Źródła stawek
 

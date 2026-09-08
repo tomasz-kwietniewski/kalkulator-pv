@@ -108,6 +108,32 @@ Rzeczy, ktore juz raz byly zle albo latwo je zepsuc:
   Gdyby to kiedys przeszkadzalo, alternatywa jest obracanie danych po dniu tygodnia
   zamiast po dacie - ale wtedy rozjezdzaja sie pory roku.
 
+## Archetypy ogrzewania: `data/domy.js` i `tools/dekompozycja.mjs`
+
+`data/domy.js` jest **generowane** przez `tools/dekompozycja.mjs`. Skrypt czyta
+`data/profiles.js` (artefakt już anonimowy) i temperatury z Open-Meteo ERA5, więc może
+leżeć w publicznym repozytorium.
+
+Metoda: regresja zużycia dobowego względem temperatury wyznacza próg grzewczy, kształt
+doby składnika bytowego bierzemy z dni cieplejszych niż próg (bo tylko wtedy widać dom
+bez grzania), a grzanie to nadwyżka ponad ten kształt, godzina po godzinie.
+
+Rzeczy, które trzeba przy tym trzymać w głowie:
+
+- **Próg grzewczy jest słabo określony.** Wyszedł 15,5°C, ale 15,0-16,5°C tłumaczy dane
+  praktycznie tak samo (R² 0,555). `METODA.progOd` i `progDo` są w danych właśnie po to,
+  żeby nie chwalić się precyzją, której nie ma.
+- **Nie modelujemy załamania COP przy mrozie.** Plan zakładał, że będzie widoczne, ale
+  w zmierzonym roku nadwyżka na stopień jest podobna przy -10°C i przy +8°C. Przeliczenie
+  prądu na ciepło idzie przez model COP (ułamek Carnota, zasilanie 35°C, SCOP wychodzi
+  3,86) i to jest **założenie, nie pomiar** - tak też jest opisane w README.
+- **Wariant akumulacyjny jest najważniejszym wynikiem tego etapu**: przeniesienie grzania
+  na noc zbija autokonsumpcję z 70% na 47% i wydłuża zwrot z 4,7 do 6,7 roku. Gdyby
+  kiedyś wyszło inaczej, najpierw sprawdzić, czy okno nocne 22-6 nie rozjechało się
+  ze strefami taryfowymi.
+- **Wczytany plik użytkownika ma pierwszeństwo przed archetypem** i podpowiedź przy polu
+  mówi wtedy wprost, że wybór ogrzewania nic nie zmienia. To celowe: dane biją model.
+
 ## Parametry skalibrowane - traktować ostrożnie
 
 Dwie wartości w `src/engine.js` nie pochodzą z kart katalogowych, tylko zostały dobrane
