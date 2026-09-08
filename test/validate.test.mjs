@@ -27,12 +27,13 @@ const maski = maskiProfilu(profile);
 const POMIAR = {
   importKWh: 5642,
   eksportKWh: 2236,
-  // import_by_zone z process_sofar.py: 4 375 kWh z 5 642 przypadlo na tania strefe G12w.
-  // Uwaga: generator dzielil rok na sezony wedlug zmiany czasu, a taryfa PGE robi to
-  // datami (lato 1.04-30.09), wiec ten cel jest policzony inna definicja strefy niz
-  // model. Roznica rzedu 1,6 pkt proc. miesci sie w limicie, ale nie jest czystym
-  // bledem modelu - do zestrojenia przy nastepnym przeliczaniu profili.
-  udzialTaniejG12w: 0.775,
+  // import_by_zone z process_sofar.py: 4 409 kWh z 5 642 przypadlo na tania strefe G12w.
+  // Generator liczyl kiedys sezon wedlug zmiany czasu, przez co ten cel byl policzony
+  // inna definicja strefy niz model (bylo 4 375 kWh, czyli 77,5%). Poprawiony 8.09.2026:
+  // sezon idzie z tabeli w taryfie, tak samo jak w src/zones.js, a wygenerowane maski
+  // zgadzaja sie z naszymi co do godziny przez caly rok. Rozbieznosc ponizej jest wiec
+  // od tego momentu czystym bledem modelu, a nie roznica definicji.
+  udzialTaniejG12w: 0.781,
 };
 
 const INSTALACJA = {

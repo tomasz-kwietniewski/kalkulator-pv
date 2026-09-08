@@ -43,6 +43,14 @@ także tego repozytorium: 8.09.2026 poprawiliśmy dane pod zmianę czasu, zanim 
 pokazała, że sezon wyznaczają daty. Skutek różnicy: 112 godzin w G12 i 80 w G12w między
 1.10.2025 a 31.03.2026, rachunek roczny o ok. 6 zł, udział taniej strefy 76,1% -> 75,9%.
 
+**Generator jest już poprawiony** (8.09.2026, ta sama sesja): funkcja nazywa się teraz
+`is_sezon_letni` i zwraca `4 <= month <= 9`, z odsyłaczem do pkt 2.2.8 taryfy. Sprawdzone
+end-to-end: wygenerowane maski zgadzają się z `src/zones.js` **co do godziny przez cały
+rok, w obu grupach**. Profile energii (`pv_per_kwp`, `house_per_MWh`, `ev_per_MWh`,
+`dzien_wolny`) wyszły z generatora bit w bit takie same, więc `data/profiles.js` nie
+wymagało przeliczenia. Zmienił się natomiast zmierzony udział taniej strefy: 77,5% -> 78,1%
+(4 375 -> 4 409 kWh z 5 642), i tę wartość ma teraz `test/validate.test.mjs`.
+
 Pola `strefa_tania_g12` i `strefa_tania_g12w` **zostały usunięte** z `data/profiles.js`
 i `test/profiles_raw.json`. Zapisywały regułę generatora, czyli tę błędną, a odtwarzanie
 ich z `zones.js` dałoby test, który porównuje kod z samym sobą. Bramką jest teraz
