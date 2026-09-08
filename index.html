@@ -199,12 +199,14 @@
 <div class="wrap">
 
 <header class="top">
-  <div class="eyebrow">Osiedle w Musułach</div>
+  <div class="eyebrow">Policzone na zmierzonym roku</div>
   <h1>Czy fotowoltaika i magazyn energii mi się opłacą?</h1>
-  <p class="sub">Ten kalkulator nie zgaduje. Liczy godzina po godzinie przez cały rok, na
-  <b>zmierzonym profilu pracy sąsiedniego domu</b> - takiego samego jak Twój: drewniany
-  szkieletowy, w pełni elektryczny, z pompami ciepła. Rok danych z licznika falownika
-  co 5 minut, zweryfikowany fakturami.</p>
+  <p class="sub">Ten kalkulator nie zgaduje i nie pyta Cię o autokonsumpcję - <b>liczy ją
+  godzina po godzinie przez cały rok</b>. Podstawą jest zmierzony rok pracy realnego domu:
+  drewniany szkieletowy, 125 m², w pełni elektryczny, z pompami ciepła, dane z licznika
+  falownika co 5 minut, zweryfikowane fakturami. Dom ogrzewany inaczej, w innym miejscu
+  Polski i u innego operatora policzysz, zmieniając pola niżej - a jeśli masz swój plik
+  z licznika, policzy się na Twoich danych.</p>
 </header>
 
 <section class="noprint">
@@ -219,7 +221,8 @@
       </div>
       <div>
         <label for="zuzycie">Roczne zużycie prądu
-          <span class="hint">kWh z faktury. Na tym osiedlu zwykle 8 000 - 15 000.</span></label>
+          <span class="hint">kWh z faktury. Dom w pełni elektryczny zwykle 8 000 - 15 000,
+            z ogrzewaniem gazowym 2 000 - 5 000.</span></label>
         <input type="number" id="zuzycie" value="11000" min="1000" max="40000" step="500">
       </div>
       <div>
@@ -287,6 +290,22 @@
       </div>
       <p id="importBlad" class="importblad" hidden></p>
     </details>
+  </div>
+
+  <div class="doczytaj">
+    <h3>Dla kogo ten wynik jest wiarygodny</h3>
+    <p>Kalkulator liczy autokonsumpcję godzina po godzinie, więc wszystko zależy od tego,
+    skąd bierze się profil zużycia. Warianty, od najmocniejszego:</p>
+    <p><b>1. Twój plik z licznika</b> - pasuje zawsze, bo to Twoje dane. Wgrywasz go wyżej,
+    zostaje w przeglądarce.<br>
+    <b>2. Profil zmierzony</b> (pompa ciepła) - realny rok pracy konkretnego domu.
+    Im bardziej Twój dom go przypomina, tym lepiej.<br>
+    <b>3. Archetyp ogrzewania</b> - ten sam zmierzony rok rozłożony na składnik bytowy
+    i grzewczy, potem złożony inaczej. Kształty są zmierzone, proporcje przeliczone.<br>
+    <b>4. Miasto z PVGIS</b> - model nasłonecznienia. Dobrze oddaje region, ale zakłada
+    czysty dach bez zacienienia.</p>
+    <p>Tego generyczne kalkulatory nie mówią, a to jest różnica między liczbą, na której
+    można oprzeć decyzję, a liczbą, która ładnie wygląda.</p>
   </div>
 
   <h2><span class="n">2</span>Instalacja, którą rozważasz</h2>
@@ -741,9 +760,11 @@
 </section>
 
 <footer>
-  Kalkulator powstał dla sąsiadów z osiedla w Musułach. Stawki: Taryfa PGE Obrót dla grup G
-  zatwierdzona przez Prezesa URE na 2026 oraz Wyciąg z Taryfy PGE Dystrybucja od 1.02.2026.
-  Ceny giełdowe: API PSE. Wynik jest szacunkiem, nie ofertą ani poradą finansową.
+  Kalkulator powstał dla sąsiadów z jednego osiedla i stąd bierze się jego podstawa:
+  zmierzony rok pracy konkretnego domu. Stawki pięciu operatorów pochodzą z wyciągów
+  z taryf OSD i taryf sprzedawców zatwierdzonych przez Prezesa URE na 2026.
+  Nasłonecznienie miast: PVGIS © European Union. Ceny giełdowe: API PSE.
+  Wynik jest szacunkiem, nie ofertą ani poradą finansową.
 </footer>
 
 </div>

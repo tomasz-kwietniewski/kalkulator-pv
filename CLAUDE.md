@@ -284,9 +284,12 @@ trzy moduły. Dziś kalkulator liczy liniowo, co zaniża cenę pojemności niety
 
 ## Co wychodzi w sprawie magazynu i dlaczego to zostawiamy
 
-Na profilu domu odniesienia magazyn **wydłuża** czas zwrotu całości (3,7 roku bez
-magazynu, 5,8 roku przy 15 kWh), choć podnosi autokonsumpcję z 44% do 69%. Sam magazyn
-zwraca się w ok. 15 latach, najlepiej w okolicach 10 kWh. Pełna tabela jest w `README.md`.
+Na profilu domu odniesienia magazyn **wydłuża** czas zwrotu całości (2,9 roku bez
+magazynu, 4,7 roku przy 15 kWh), choć podnosi autokonsumpcję z 45% do 70%. Sam magazyn
+zwraca się w ok. 13 latach, najlepiej w okolicach 10 kWh (12,3 roku). Pełna tabela jest
+w `README.md` i była przeliczana 8.09.2026 - po zmianach modelu w etapach 1-6.
+Liczby biorą się z konfiguracji domyślnej strony: 9 kWp, 11 MWh, G12w u PGE, dach
+południowy wschód/zachód 35°, profil zmierzony.
 
 To wynik kontrintuicyjny i przy każdej zmianie modelu warto sprawdzić, czy nadal wychodzi.
 Nie wygładzać go: kalkulator ma odpowiadać, a nie sprzedawać magazyn. Sekcja 4 mówi wprost,
