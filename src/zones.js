@@ -88,23 +88,75 @@ export function sezon(dataISO, sezony) {
  * na 15-17, a w zimowym na 13-15. Ten sam uklad okien ma G12 i G12w - roznica jest
  * w dniach wolnych.
  */
-const OKNA_PGE = {
-  zawsze: [[22, 6]],
-  lato: [[15, 17]],
-  zima: [[13, 15]],
-};
+// Okna z tabel stref w taryfach OSD. PGE przesuwa blok popoludniowy z sezonem,
+// reszta ma go na stale albo nie ma go wcale.
+const OKNA_PGE = { zawsze: [[22, 6]], lato: [[15, 17]], zima: [[13, 15]] };
+const OKNA_DOLINA = { zawsze: [[22, 6], [13, 15]] };
+const OKNA_NOC = { zawsze: [[22, 6]] };
+const OKNA_NOC_OD_21 = { zawsze: [[21, 6]] };
 
 export const STREFY = {
   pge: {
     nazwa: 'PGE Dystrybucja',
     // Taryfa PGE Dystrybucja S.A. na 2026, tekst jednolity od 1.02.2026, pkt 2.2.8:
-    // tabela stref dla C12b/G12 oraz C12w/G12w/G12e.
+    // Lato (1.04-30.09) nocna 15-17 i 22-6; Zima (1.10-31.03) nocna 13-15 i 22-6.
     zrodlo: 'Taryfa PGE Dystrybucja S.A. na 2026, pkt 2.2.8',
     obowiazujeOd: '2026-02-01',
     sezony: { lato: { od: '04-01', do: '09-30' } },
     grupy: {
       G12: { okna: OKNA_PGE, dniWolneTanie: false },
       G12w: { okna: OKNA_PGE, dniWolneTanie: true },
+    },
+  },
+  tauron: {
+    nazwa: 'TAURON Dystrybucja',
+    // Wyciag z Taryfy TD S.A. na rok 2026 dla grup G, pkt 2.2.3 i 2.2.4:
+    // od 1 stycznia do 31 grudnia, nocna 22-6 i 13-15 - bez podzialu na sezony.
+    zrodlo: 'Wyciag z Taryfy TAURON Dystrybucja S.A. na 2026 dla grup G, pkt 2.2.3-2.2.4',
+    obowiazujeOd: '2026-01-01',
+    sezony: null,
+    grupy: {
+      G12: { okna: OKNA_DOLINA, dniWolneTanie: false },
+      G12w: { okna: OKNA_DOLINA, dniWolneTanie: true },
+    },
+  },
+  enea: {
+    nazwa: 'ENEA Operator',
+    // Wyciag z Taryfy ENEA Operator na 2026, pkt 2.2.5: G12w to szczyt 6-21 w dni
+    // robocze, wiec tania strefa zaczyna sie o 21:00 i nie ma bloku popoludniowego.
+    // Grupy G12 tu nie ma celowo: pkt 2.2.7 podaje tylko dlugosc stref (10 godzin,
+    // w tym 8 z doliny 22-7 i 2 z przedzialu 13-17), a godziny zegarowe "okresla
+    // Operator". Bez tych godzin maska bylaby zgadywaniem.
+    zrodlo: 'Wyciag z Taryfy ENEA Operator sp. z o.o. na 2026, pkt 2.2.5',
+    obowiazujeOd: '2026-02-01',
+    sezony: null,
+    grupy: {
+      G12w: { okna: OKNA_NOC_OD_21, dniWolneTanie: true },
+    },
+  },
+  energa: {
+    nazwa: 'Energa-Operator',
+    // Wyciag z Taryfy Energa-Operator na 2026, pkt 3.2.5 i 3.2.6: od 1 stycznia
+    // do 31 grudnia, nocna 13-15 i 22-6.
+    zrodlo: 'Wyciag z Taryfy Energa-Operator S.A. na 2026, pkt 3.2.5-3.2.6',
+    obowiazujeOd: '2026-02-01',
+    sezony: null,
+    grupy: {
+      G12: { okna: OKNA_DOLINA, dniWolneTanie: false },
+      G12w: { okna: OKNA_DOLINA, dniWolneTanie: true },
+    },
+  },
+  stoen: {
+    nazwa: 'Stoen Operator',
+    // Taryfa Stoen Operator na 2026, pkt 2.2.5 i 2.2.6. Uwaga na roznice miedzy
+    // grupami: G12 ma doline 13-15, ale w G12w strefa szczytowa to 6-22 w dni
+    // robocze, wiec doliny popoludniowej tam nie ma.
+    zrodlo: 'Taryfa Stoen Operator Sp. z o.o. na 2026, pkt 2.2.5-2.2.6',
+    obowiazujeOd: '2026-01-01',
+    sezony: null,
+    grupy: {
+      G12: { okna: OKNA_DOLINA, dniWolneTanie: false },
+      G12w: { okna: OKNA_NOC, dniWolneTanie: true },
     },
   },
 };

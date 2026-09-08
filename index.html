@@ -248,7 +248,19 @@
         </div>
       </div>
       <div>
-        <label for="grupa">Taryfa</label>
+        <label for="operator">Operator sieci
+          <span class="hint">Firma z Twojej faktury za dystrybucję - to nie to samo co sprzedawca prądu.</span></label>
+        <select id="operator">
+          <option value="pge" selected>PGE Dystrybucja</option>
+          <option value="tauron">TAURON Dystrybucja</option>
+          <option value="enea">ENEA Operator</option>
+          <option value="energa">Energa-Operator</option>
+          <option value="stoen">Stoen Operator (Warszawa)</option>
+        </select>
+      </div>
+      <div>
+        <label for="grupa">Taryfa
+          <span class="hint" id="grupaHint">Godziny stref różnią się między operatorami.</span></label>
         <select id="grupa">
           <option value="G11">G11 - jedna cena całą dobę</option>
           <option value="G12">G12 - taniej w nocy</option>

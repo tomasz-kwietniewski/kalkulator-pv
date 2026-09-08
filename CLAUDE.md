@@ -78,8 +78,11 @@ Pozostałe parametry mają oparcie w pomiarze albo w dokumentacji:
 2. **Wysokość kontenera wykresu musi być ustalona w CSS** (`.cwrap { height: 300px }`).
    Chart.js z `maintainAspectRatio: false` dopasowuje canvas do rodzica; bez ustalonej
    wysokości canvas rozpycha rodzica w nieskończoność. Ten błąd już raz wszedł.
-3. **Stawki tylko w `src/pricing.js`**, z datą obowiązywania i odsyłaczem do dokumentu.
-   Aktualizacja na kolejny rok ma być jedną zmianą.
+3. **Stawki tylko w `src/pricing.js`**, w tabeli `OPERATORZY`, z datą obowiązywania
+   i odsyłaczem do dokumentu przy każdym operatorze. Aktualizacja na kolejny rok ma być
+   zmianą w tej jednej tabeli. **Bez dokumentu nie wpisujemy stawki ani godziny stref** -
+   dlatego ENEA nie ma G12: jej taryfa podaje tylko długość stref, a godziny zegarowe
+   „określa Operator".
 4. **Testy są bramką w CI.** Push do `main` nie opublikuje strony, jeśli `node --test`
    nie przejdzie. To jedyne zabezpieczenie przed cichym zepsuciem wyników.
 5. **Suma pozycji kosztowych musi równać się polu „Razem" co do złotówki.** Pozycje

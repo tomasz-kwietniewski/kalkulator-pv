@@ -6,8 +6,8 @@
 import profile from '../data/profiles.js';
 import rceDane from '../data/rce.js';
 import { symuluj, krzywaMagazynu } from './engine.js';
-import { rachunekRoczny, DYNAMICZNA } from './pricing.js';
-import { maskiProfilu } from './zones.js';
+import { rachunekRoczny, DYNAMICZNA, OPERATORZY } from './pricing.js';
+import { maskiProfilu, STREFY } from './zones.js';
 import {
   pozycjeZCennika, sumaPozycji, rozdzielKwote, POZYCJE_KOSZTU,
   kaskadaNakladu, zwrot, zwrotDwutorowo, dotacjaPME2, cenaSklepowaMagazynu,
@@ -19,8 +19,39 @@ import {
 } from './charts.js';
 import { zl, kwh, proc, zLatami, liczba, punktyProc } from './format.js';
 
-// Maski stref liczone raz, z kalendarza okresu profilu - nie zmieniaja sie w trakcie pracy.
-const MASKI = maskiProfilu(profile);
+// Maski stref liczy sie z kalendarza okresu profilu i osobno dla kazdego operatora,
+// bo godziny stref sa u kazdego inne. Liczymy leniwie i zapamietujemy - jedna maska
+// to przebieg po 8 760 godzinach, a przy suwaku przeliczamy strone przy kazdym ruchu.
+const maskiOperatora = new Map();
+const maski = (operator) => {
+  if (!maskiOperatora.has(operator)) {
+    maskiOperatora.set(operator, maskiProfilu(profile, STREFY[operator]));
+  }
+  return maskiOperatora.get(operator);
+};
+
+/** Grupy strefowe, ktore dany operator ma opisane w taryfie. */
+const grupyOperatora = (operator) => ['G11', ...Object.keys(STREFY[operator].grupy)];
+
+/**
+ * Lista taryf zalezy od operatora: ENEA nie podaje w taryfie godzin stref G12
+ * (ustala je indywidualnie), wiec tej opcji przy niej nie pokazujemy, zamiast
+ * pokazywac wynik policzony na zgadnietych godzinach.
+ */
+function dopasujTaryfyDoOperatora() {
+  const operator = $('operator').value;
+  const dostepne = new Set([...grupyOperatora(operator), 'dynamiczna']);
+  const select = $('grupa');
+  [...select.options].forEach((opcja) => { opcja.hidden = !dostepne.has(opcja.value); });
+  if (!dostepne.has(select.value)) select.value = 'G12w';
+
+  const def = STREFY[operator];
+  const brakujace = ['G12', 'G12w'].filter((g) => !def.grupy[g]);
+  $('grupaHint').textContent = def.sezony
+    ? 'U tego operatora tania strefa popołudniowa przesuwa się z sezonem: 13-15 zimą, 15-17 latem.'
+    : `Godziny stref u tego operatora są takie same przez cały rok.${
+      brakujace.length ? ` Taryfa nie podaje godzin ${brakujace.join(' i ')}, więc tej grupy tu nie ma.` : ''}`;
+}
 
 const rce = rceDane.rce;
 const $ = (id) => document.getElementById(id);
@@ -33,7 +64,7 @@ const POLE_POZYCJI = {
   panele: 'kosztPanele', falownik: 'kosztFalownik', magazyn: 'kosztMagazyn', eps: 'kosztEps',
 };
 
-const POLA = ['zuzycie', 'auto', 'orientacja', 'kwp', 'magazyn', 'grupa', 'eps',
+const POLA = ['zuzycie', 'auto', 'orientacja', 'kwp', 'magazyn', 'operator', 'grupa', 'eps',
   'kosztPanele', 'kosztFalownik', 'kosztMagazyn', 'kosztEps', 'koszt',
   'dotacja', 'pit', 'wzrostCen', 'rezerwa', 'dobieranie', 'podatnicy',
   'mocAwaria', 'limitEps'];
@@ -56,8 +87,10 @@ let kosztRecznie = false;
 let proporcjeKosztu = null;
 
 function czytajPola() {
+  const operator = $('operator').value;
   const grupa = $('grupa').value;
   return {
+    operator,
     zuzycieDomuKWh: +$('zuzycie').value,
     poborAutaKWh: +$('auto').value * KWH_NA_KM,
     orientacja: $('orientacja').value,
@@ -66,6 +99,7 @@ function czytajPola() {
     grupa,
     dynamiczna: grupa === 'dynamiczna',
     grupaRozliczen: grupa === 'dynamiczna' ? 'G12w' : grupa,
+    MASKI: maski(operator),
     eps: $('eps').checked,
     dotacja: +$('dotacja').value,
     pit: $('pit').value,
@@ -113,11 +147,12 @@ function policzWariant(p, kWp, magazynKWh) {
     poborAutaKWh: p.poborAutaKWh,
     orientacja: p.orientacja,
     rezerwaAwaryjna: p.rezerwaAwaryjna,
-    maskaStrefy: MASKI[p.grupaRozliczen],
+    maskaStrefy: p.MASKI[p.grupaRozliczen],
     // Dobieranie z sieci ma sens tylko przy taryfie ze strefami.
     ladowanieZSieci: p.ladowanieZSieci && magazynKWh > 0 && p.grupaRozliczen !== 'G11',
   }, profile);
-  const rachunek = rachunekRoczny(wynik, MASKI[p.grupaRozliczen], p.grupaRozliczen, {
+  const rachunek = rachunekRoczny(wynik, p.MASKI[p.grupaRozliczen], p.grupaRozliczen, {
+    operator: p.operator,
     rce, dynamiczna: p.dynamiczna, czapka: DYNAMICZNA.czapka, netBilling: kWp > 0,
   });
   return { wynik, rachunek };
@@ -245,10 +280,12 @@ function rysujTaryfy(p) {
     const w = symuluj({
       kWp: p.kWp, magazynKWh: p.magazynKWh,
       zuzycieDomuKWh: p.zuzycieDomuKWh, poborAutaKWh: p.poborAutaKWh,
-      orientacja: p.orientacja, rezerwaAwaryjna: p.rezerwaAwaryjna, maskaStrefy: MASKI[g],
+      orientacja: p.orientacja, rezerwaAwaryjna: p.rezerwaAwaryjna, maskaStrefy: p.MASKI[g],
       ladowanieZSieci: p.ladowanieZSieci && p.magazynKWh > 0 && g !== 'G11',
     }, profile);
-    return rachunekRoczny(w, MASKI[g], g, { rce, dynamiczna, netBilling: p.kWp > 0 }).brutto;
+    return rachunekRoczny(w, p.MASKI[g], g, {
+      rce, dynamiczna, netBilling: p.kWp > 0, operator: p.operator,
+    }).brutto;
   };
 
   // Wariant dynamiczny liczymy na harmonogramie G12w: magazyn pracuje wedlug stref,
@@ -256,7 +293,7 @@ function rysujTaryfy(p) {
   // zwyklemu falownikowi z Time of Use, a nie takiemu, ktory sam sledzi ceny godzinowe.
   // Drogie godziny na gieldzie i tak wypadaja w oknach zblizonych do stref taryfowych.
   const wszystkie = [
-    ...['G11', 'G12', 'G12w'].map((g) => ({ g, brutto: policz(g, false) })),
+    ...grupyOperatora(p.operator).map((g) => ({ g, brutto: policz(g, false) })),
     { g: 'dynamiczna', brutto: policz('G12w', true) },
   ].sort((a, b) => a.brutto - b.brutto);
 
@@ -367,7 +404,7 @@ function rysujKrzywa(p, wybrana) {
     poborAutaKWh: p.poborAutaKWh,
     orientacja: p.orientacja,
     rezerwaAwaryjna: p.rezerwaAwaryjna,
-    maskaStrefy: MASKI[p.grupaRozliczen],
+    maskaStrefy: p.MASKI[p.grupaRozliczen],
     ladowanieZSieci: p.ladowanieZSieci && p.grupaRozliczen !== 'G11',
   }, profile, PUNKTY_KRZYWEJ);
 
@@ -644,6 +681,7 @@ const POLA_KOSZTU = ['koszt', ...Object.values(POLE_POZYCJI)];
 
 function start() {
   odtworzZAdresu();
+  dopasujTaryfyDoOperatora();
   POLA.forEach((id) => {
     const el = $(id);
     el.addEventListener('input', () => {
@@ -652,6 +690,7 @@ function start() {
       // wiec wracamy do cennika - inaczej kwota z poprzedniej konfiguracji zostalaby
       // przypisana do nowej i cicho zafalszowala zwrot.
       if (['kwp', 'magazyn', 'eps'].includes(id)) kosztRecznie = false;
+      if (id === 'operator') dopasujTaryfyDoOperatora();
       przelicz();
     });
   });

@@ -81,7 +81,7 @@ który nigdy nie trafia do serwera.
 index.html            strona
 src/engine.js         symulacja 8760 h: PV, dom, magazyn, siec (bez DOM, testowalny z Node)
 src/zones.js          strefy taryfowe z kalendarza: swieta, dni wolne, sezon taryfowy
-src/pricing.js        taryfy PGE, dystrybucja, oplaty, net-billing, taryfa dynamiczna
+src/pricing.js        taryfy pieciu operatorow, oplaty, net-billing, taryfa dynamiczna
 src/economics.js      pozycje kosztowe, dotacje, ulga, kaskada nakladu, czas zwrotu
 src/charts.js         wykresy, znacznik punktu zwrotu, diagram przeplywu energii
 src/format.js         formatowanie liczb po polsku (kwoty, procenty, odmiana lat)
@@ -189,8 +189,27 @@ sprawdź listę obsługiwanych urządzeń, zanim wybierzesz falownik** - a nie o
 
 ## Źródła stawek
 
-- Taryfa PGE Obrót dla grup taryfowych G, zatwierdzona przez Prezesa URE na 2026 r.
-- Wyciąg z Taryfy PGE Dystrybucja S.A. obowiązujący od 1.02.2026 (pkt 7.9, 7.11-7.13)
+Kalkulator liczy dla pięciu operatorów sieci. Wszystkie stawki pochodzą z wyciągów
+z taryf OSD i z taryf sprzedawców zatwierdzonych przez Prezesa URE na 2026 r.:
+
+| Operator | Sprzedawca | Dokument |
+|---|---|---|
+| PGE Dystrybucja | PGE Obrót | Taryfa na 2026, tekst jednolity od 1.02.2026, pkt 2.2.8 i 7.9 |
+| TAURON Dystrybucja | TAURON Sprzedaż | Wyciąg z Taryfy na 2026 dla grup G, pkt 2.2 i 7.1 |
+| ENEA Operator | ENEA S.A. | Wyciąg z Taryfy na 2026, pkt 2.2.5 i 7.2 |
+| Energa-Operator | ENERGA-OBRÓT | Wyciąg z Taryfy na 2026, pkt 3.2 i 9.2 |
+| Stoen Operator | E.ON Polska | Taryfa na 2026, pkt 2.2.5-2.2.6 i 7.5 |
+
+Różnice między nimi są większe, niż się wydaje, i nie sprowadzają się do cen:
+
+- **PGE jako jedyne przesuwa blok popołudniowy z sezonem** - 13-15 zimą, 15-17 latem.
+  Sezon wyznaczają daty (lato 1.04 - 30.09), a nie zmiana czasu.
+- **Stoen w G12w nie ma doliny popołudniowej** - strefa szczytowa to 6-22 w dni robocze.
+- **ENEA w G12w zaczyna tanią strefę o 21:00**, też bez doliny.
+- **ENEA nie podaje w taryfie godzin G12** (ustala je indywidualnie), więc kalkulator
+  tej grupy przy niej nie pokazuje, zamiast liczyć na zgadniętych godzinach.
+- **E.ON pobiera opłatę handlową** (13,23 zł netto miesięcznie), której sprzedawcy
+  z urzędu na taryfie URE nie mają.
 - Ceny RCE: API PSE (`api.raporty.pse.pl`)
 - **Ceny sprzętu**: sklep producenta (sofar-sklep.pl), stan na 14.08.2026. Falownik
   Sofar HYD8KTL 5 799 zł, jednostka sterująca magazynu 1 299 zł, moduł 5,12 kWh
