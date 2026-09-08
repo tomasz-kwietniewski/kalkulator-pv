@@ -196,6 +196,21 @@ wynik, że wykresy mają po 12 punktów i **nie rosną po wielu przeliczeniach**
 jest czysta i że zakładka sieci nie pokazuje żadnego obcego hosta. Zrzut ekranu całej
 strony, nie tylko pierwszego ekranu.
 
+**Co zostało już sprawdzone i czym** - żeby nie robić tego po raz drugi od zera:
+
+- **Eksport do PDF i do HTML, 8.09.2026.** PDF przez `page.pdf()` na mediach print,
+  eksport HTML przez kliknięcie przycisku z przechwyceniem bloba (`URL.createObjectURL`).
+  PDF ma 6 stron, formularz jest schowany, wykresy się rysują. Plik HTML waży ok. 185 kB,
+  nie ma w nim ani jednego `<script>`, wykresy są wklejone jako PNG w data URI, a pola
+  formularza zamienione na tekst - w pliku bez JS pole do wpisywania i tak nic by nie
+  robiło. Stąd też `h2,h3 { break-after: avoid }` w stylach druku: bez tego nagłówki
+  sekcji 6, 7 i 8 zostawały same na dole strony.
+- **Widok na telefonie, 12.08.2026 (390 px):** brak poziomego przewijania, tabela przewija
+  się wewnątrz `.tabwrap`, diagram przepływu schodzi do jednej kolumny.
+- **Liczby dziesiętne, 8.09.2026:** przejście po stronie regexem
+  `\d+\.\d+\s*(kWh|kWp|zł|%)` przy kilku pojemnościach magazynu i przy włączonym EPS.
+  Warto powtórzyć zawsze, gdy jakaś wartość przestaje być liczbą całkowitą.
+
 ## Skąd pochodzi CENNIK_ODNIESIENIA
 
 Dokumenty źródłowe leżą w prywatnym repo `zuzycie-pradu`, w
@@ -305,15 +320,6 @@ pozycji osobno**, żeby suma pozycji dalej była dokładnie tym, co pokazuje pol
 - **Ceny wariantu backupu całego domu** (rozdzielnica z automatycznym przełącznikiem) -
   sekcja 6 opisuje ten wariant jakościowo, bo nie mamy dla niego żadnej oferty. Gdy
   pojawi się konkretna wycena, można ją dołożyć obok widełek 2 900 - 4 000 zł za EPS.
-- **Eksport do PDF i do HTML sprawdzony 8.09.2026** (Playwright: `page.pdf()` na mediach
-  print oraz kliknięcie „Zapisz jako plik" z przechwyceniem bloba). PDF ma 6 stron,
-  formularz jest schowany, wykresy się rysują. Eksport HTML waży ok. 185 kB, nie ma
-  w nim ani jednego `<script>`, wykresy są wklejone jako PNG w data URI, a pola formularza
-  zamienione na tekst - w pliku bez JS pole do wpisywania i tak nic by nie robiło.
-  Przy okazji poprawione: `h2,h3 { break-after: avoid }`, bo nagłówki sekcji 6, 7 i 8
-  zostawały same na dole strony.
-- Widok na telefonie sprawdzony 12.08.2026 (390 px): brak poziomego przewijania, tabela
-  przewija się wewnątrz `.tabwrap`, diagram przepływu schodzi do jednej kolumny.
 
 ## Co wychodzi w sprawie magazynu i dlaczego to zostawiamy
 
