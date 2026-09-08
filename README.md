@@ -50,9 +50,9 @@ z tym, co naprawdę pokazały liczniki:
 
 | Wielkość | Symulacja | Pomiar | Odchyłka |
 |---|---|---|---|
-| Pobór z sieci | 5 605 kWh | 5 642 kWh | -0,7% |
+| Pobór z sieci | 5 604 kWh | 5 642 kWh | -0,7% |
 | Oddanie do sieci | 2 354 kWh | 2 236 kWh | +5,3% |
-| Udział taniej strefy G12w | 76,2% | 77,5% | -1,3 pkt proc. |
+| Udział taniej strefy G12w | 76,1% | 77,5% | -1,4 pkt proc. |
 | Największy błąd miesięczny | - | - | 74 kWh |
 
 Dwa parametry modelu (pobór własny układu i poziom dobierania magazynu z sieci)
@@ -75,6 +75,7 @@ który nigdy nie trafia do serwera.
 ```
 index.html            strona
 src/engine.js         symulacja 8760 h: PV, dom, magazyn, siec (bez DOM, testowalny z Node)
+src/zones.js          strefy taryfowe z kalendarza: swieta, dni wolne, czas letni
 src/pricing.js        taryfy PGE, dystrybucja, oplaty, net-billing, taryfa dynamiczna
 src/economics.js      pozycje kosztowe, dotacje, ulga, kaskada nakladu, czas zwrotu
 src/charts.js         wykresy, znacznik punktu zwrotu, diagram przeplywu energii

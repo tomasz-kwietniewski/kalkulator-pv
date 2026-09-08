@@ -69,21 +69,18 @@ export const DYNAMICZNA = {
   czapka: null,
 };
 
-const TANIA = '1';
-
 /**
  * Koszt energii pobranej z sieci, godzina po godzinie.
  *
  * @param {Float64Array} imp godzinowy import z silnika
- * @param {object} profile profile z maskami stref
+ * @param {Uint8Array|null} maska maska taniej strefy z src/zones.js (null dla G11)
  * @param {string} grupa 'G11' | 'G12' | 'G12w'
  * @returns {object} rozbicie kosztu brutto na skladniki
  */
-export function kosztImportu(imp, profile, grupa, opcje = {}) {
+export function kosztImportu(imp, maska, grupa, opcje = {}) {
   const { rce = null, dynamiczna = false, czapka = DYNAMICZNA.czapka } = opcje;
   const energia = ENERGIA[grupa];
   const dyst = DYSTRYBUCJA[grupa];
-  const maska = grupa === 'G11' ? null : profile[`strefa_tania_${grupa.toLowerCase()}`];
   const dodatki = OPLATY_ZMIENNE.jakosciowa + OPLATY_ZMIENNE.oze
     + OPLATY_ZMIENNE.kogeneracyjna + OPLATY_ZMIENNE.akcyza;
 
@@ -91,7 +88,7 @@ export function kosztImportu(imp, profile, grupa, opcje = {}) {
   for (let h = 0; h < imp.length; h++) {
     const e = imp[h];
     if (e <= 0) continue;
-    const tania = maska ? maska[h] === TANIA : false;
+    const tania = maska ? maska[h] === 1 : false;
     kWh += e;
     if (tania) kWhTania += e;
 
@@ -165,9 +162,9 @@ export function depozytProsumencki(eksp, rce) {
  * Depozyt pomniejsza koszt ENERGII, nie calego rachunku - to czesta pomylka.
  * Nadwyzka depozytu ponad koszt energii przechodzi dalej i tu ja tylko raportujemy.
  */
-export function rachunekRoczny(wynik, profile, grupa, opcje = {}) {
+export function rachunekRoczny(wynik, maska, grupa, opcje = {}) {
   const { rce = null, dynamiczna = false, czapka = DYNAMICZNA.czapka, netBilling = true } = opcje;
-  const imp = kosztImportu(wynik.imp, profile, grupa, { rce, dynamiczna, czapka });
+  const imp = kosztImportu(wynik.imp, maska, grupa, { rce, dynamiczna, czapka });
   const stale = oplatyStaleNetto(grupa, wynik.zuzycie);
   const depozyt = netBilling && rce ? depozytProsumencki(wynik.eksp, rce) : 0;
 

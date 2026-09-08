@@ -20,6 +20,20 @@ wynik, konwertując JSON na moduł ES (`export default {...}`). Dane są wbudowa
 w pliki źródłowe celowo - dzięki temu strona nie wykonuje żadnego zapytania sieciowego
 i działa otwarta z dysku.
 
+## Strefy taryfowe liczy `src/zones.js`, nie profil
+
+Pola `strefa_tania_g12` i `strefa_tania_g12w` w `data/profiles.js` **nie są już źródłem
+prawdy** - maski powstają z kalendarza (`maskiProfilu`), a pola zostają w danych jako
+materiał testowy: `test/zones.test.mjs` porównuje wygenerowaną maskę z zapisaną godzina
+po godzinie. Silnik i model cenowy dostają maskę w parametrze (`maskaStrefy`,
+`Uint8Array`), więc nie wiedzą już nic o profilu ani o nazwie grupy taryfowej.
+
+Jedyna dopuszczona rozbieżność wobec zapisanych masek to sześć dni: generator kończył
+czas letni 31.10.2025 zamiast w ostatnią niedzielę października (26.10). Zapisany ciąg
+ma tam blok popołudniowy 15-17, kalendarz daje poprawne 13-15. Test wypisuje tę różnicę
+wprost i **upadnie przy każdej innej** - nie poszerzać wyjątku, tylko sprawdzić, co się
+zmieniło.
+
 ## Parametry skalibrowane - traktować ostrożnie
 
 Dwie wartości w `src/engine.js` nie pochodzą z kart katalogowych, tylko zostały dobrane

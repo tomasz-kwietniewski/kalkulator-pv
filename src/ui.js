@@ -7,6 +7,7 @@ import profile from '../data/profiles.js';
 import rceDane from '../data/rce.js';
 import { symuluj, krzywaMagazynu } from './engine.js';
 import { rachunekRoczny, DYNAMICZNA } from './pricing.js';
+import { maskiProfilu } from './zones.js';
 import {
   pozycjeZCennika, sumaPozycji, rozdzielKwote, POZYCJE_KOSZTU,
   kaskadaNakladu, zwrot, zwrotDwutorowo, dotacjaPME2, cenaSklepowaMagazynu,
@@ -17,6 +18,9 @@ import {
   wszystkieWykresy, odswiezWykresy, KOLORY,
 } from './charts.js';
 import { zl, kwh, proc, zLatami, liczba, punktyProc } from './format.js';
+
+// Maski stref liczone raz, z kalendarza okresu profilu - nie zmieniaja sie w trakcie pracy.
+const MASKI = maskiProfilu(profile);
 
 const rce = rceDane.rce;
 const $ = (id) => document.getElementById(id);
@@ -109,11 +113,11 @@ function policzWariant(p, kWp, magazynKWh) {
     poborAutaKWh: p.poborAutaKWh,
     orientacja: p.orientacja,
     rezerwaAwaryjna: p.rezerwaAwaryjna,
-    grupaTaryfowa: p.grupaRozliczen,
+    maskaStrefy: MASKI[p.grupaRozliczen],
     // Dobieranie z sieci ma sens tylko przy taryfie ze strefami.
     ladowanieZSieci: p.ladowanieZSieci && magazynKWh > 0 && p.grupaRozliczen !== 'G11',
   }, profile);
-  const rachunek = rachunekRoczny(wynik, profile, p.grupaRozliczen, {
+  const rachunek = rachunekRoczny(wynik, MASKI[p.grupaRozliczen], p.grupaRozliczen, {
     rce, dynamiczna: p.dynamiczna, czapka: DYNAMICZNA.czapka, netBilling: kWp > 0,
   });
   return { wynik, rachunek };
@@ -241,10 +245,10 @@ function rysujTaryfy(p) {
     const w = symuluj({
       kWp: p.kWp, magazynKWh: p.magazynKWh,
       zuzycieDomuKWh: p.zuzycieDomuKWh, poborAutaKWh: p.poborAutaKWh,
-      orientacja: p.orientacja, rezerwaAwaryjna: p.rezerwaAwaryjna, grupaTaryfowa: g,
+      orientacja: p.orientacja, rezerwaAwaryjna: p.rezerwaAwaryjna, maskaStrefy: MASKI[g],
       ladowanieZSieci: p.ladowanieZSieci && p.magazynKWh > 0 && g !== 'G11',
     }, profile);
-    return rachunekRoczny(w, profile, g, { rce, dynamiczna, netBilling: p.kWp > 0 }).brutto;
+    return rachunekRoczny(w, MASKI[g], g, { rce, dynamiczna, netBilling: p.kWp > 0 }).brutto;
   };
 
   // Wariant dynamiczny liczymy na harmonogramie G12w: magazyn pracuje wedlug stref,
@@ -363,7 +367,7 @@ function rysujKrzywa(p, wybrana) {
     poborAutaKWh: p.poborAutaKWh,
     orientacja: p.orientacja,
     rezerwaAwaryjna: p.rezerwaAwaryjna,
-    grupaTaryfowa: p.grupaRozliczen,
+    maskaStrefy: MASKI[p.grupaRozliczen],
     ladowanieZSieci: p.ladowanieZSieci && p.grupaRozliczen !== 'G11',
   }, profile, PUNKTY_KRZYWEJ);
 

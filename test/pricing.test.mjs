@@ -10,8 +10,10 @@ import { symuluj } from '../src/engine.js';
 import {
   ENERGIA, DYSTRYBUCJA, VAT, oplataMocowa, kosztImportu, depozytProsumencki, rachunekRoczny,
 } from '../src/pricing.js';
+import { maskiProfilu } from '../src/zones.js';
 
 const profile = JSON.parse(readFileSync(new URL('./profiles_raw.json', import.meta.url)));
+const maski = maskiProfilu(profile);
 const rce = (await import('../data/rce.js')).default.rce;
 
 test('stawki zgadzaja sie z oficjalna taryfa PGE na 2026', () => {
@@ -35,8 +37,9 @@ test('efektywna cena energii G12w zgadza sie z wyliczeniem z faktur', () => {
     kWp: 9, magazynKWh: 15.36,
     zuzycieDomuKWh: profile.meta.zuzycie_domu_kWh,
     poborAutaKWh: profile.meta.pobor_auta_kWh,
+    maskaStrefy: maski.G12w,
   }, profile);
-  const k = kosztImportu(r.imp, profile, 'G12w');
+  const k = kosztImportu(r.imp, maski.G12w, 'G12w');
 
   // consolidate.py liczy energie jako dzien*0,5821 + noc*0,4235, brutto z VAT.
   const udzialTaniej = k.udzialTaniej;
@@ -55,6 +58,7 @@ test('depozyt prosumencki odtwarza realne zasilenie z faktur', () => {
     kWp: 9, magazynKWh: 15.36,
     zuzycieDomuKWh: profile.meta.zuzycie_domu_kWh,
     poborAutaKWh: profile.meta.pobor_auta_kWh,
+    maskaStrefy: maski.G12w,
   }, profile);
   const d = depozytProsumencki(r.eksp, rce);
   // Realnie: 2 237 kWh eksportu dalo ok. 479 zl na koncie prosumenta (README repo
@@ -72,10 +76,11 @@ test('rachunek roczny rozklada sie na skladniki i oplaty stale nie znikaja', () 
     kWp: 9, magazynKWh: 15.36,
     zuzycieDomuKWh: profile.meta.zuzycie_domu_kWh,
     poborAutaKWh: profile.meta.pobor_auta_kWh,
+    maskaStrefy: maski.G12w,
   }, profile);
 
   for (const grupa of ['G11', 'G12', 'G12w']) {
-    const rach = rachunekRoczny(r, profile, grupa, { rce });
+    const rach = rachunekRoczny(r, maski[grupa], grupa, { rce });
     assert.ok(rach.brutto > 0);
     // Oplaty stale sa niezalezne od zuzycia - to podloga rachunku.
     assert.ok(rach.oplatyStaleNetto > 400 && rach.oplatyStaleNetto < 700);
@@ -87,9 +92,10 @@ test('rachunek roczny rozklada sie na skladniki i oplaty stale nie znikaja', () 
     kWp: 0, magazynKWh: 0,
     zuzycieDomuKWh: profile.meta.zuzycie_domu_kWh,
     poborAutaKWh: profile.meta.pobor_auta_kWh,
+    maskaStrefy: maski.G12w,
   }, profile);
-  const zPv = rachunekRoczny(r, profile, 'G12w', { rce });
-  const bez = rachunekRoczny(bezPv, profile, 'G12w', { rce });
+  const zPv = rachunekRoczny(r, maski.G12w, 'G12w', { rce });
+  const bez = rachunekRoczny(bezPv, maski.G12w, 'G12w', { rce });
   assert.ok(bez.brutto > zPv.brutto, 'rachunek bez PV musi byc wyzszy niz z PV');
   console.log(`\n  G12w bez PV: ${bez.brutto.toFixed(0)} zl | z PV i magazynem: ` +
     `${zPv.brutto.toFixed(0)} zl | roznica ${(bez.brutto - zPv.brutto).toFixed(0)} zl/rok\n`);

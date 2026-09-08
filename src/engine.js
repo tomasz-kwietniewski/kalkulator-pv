@@ -91,7 +91,7 @@ export function przesunProfil(pv, przesuniecie) {
 }
 
 /**
- * @param {object} p parametry instalacji i domu
+ * @param {object} p parametry instalacji i domu; maskaStrefy to Uint8Array z src/zones.js
  * @param {object} profile zawartosc data/profiles.json
  * @returns {object} bilans roczny, serie godzinowe i rozbicie miesieczne
  */
@@ -109,7 +109,7 @@ export function symuluj(p, profile) {
     sprawnoscFalownika = DOMYSLNE.sprawnoscFalownika,
     poborWlasnyW = DOMYSLNE.poborWlasnyW,
     trybStrefowy = false,
-    grupaTaryfowa = 'G12w',
+    maskaStrefy = null,
     ladowanieZSieci = DOMYSLNE.ladowanieZSieci,
     docelowyPoziomZSieci = DOMYSLNE.docelowyPoziomZSieci,
     godzinDopelniania = DOMYSLNE.godzinDopelniania,
@@ -130,8 +130,6 @@ export function symuluj(p, profile) {
   const imp = new Float64Array(n);
   const eksp = new Float64Array(n);
   const poborWlasnyKWh = (magazynKWh > 0 || kWp > 0) ? poborWlasnyW / 1000 : 0;
-  const maskaStrefy = grupaTaryfowa !== 'G11'
-    ? profile[`strefa_tania_${grupaTaryfowa.toLowerCase()}`] : null;
   const strefaTania = trybStrefowy ? maskaStrefy : null;
   const oknoDopelniania = (ladowanieZSieci && maskaStrefy)
     ? oknoPrzedDrogaStrefa(maskaStrefy, godzinDopelniania) : null;
@@ -164,7 +162,7 @@ export function symuluj(p, profile) {
       // funkcje i przy taryfie strefowej ma ona realne znaczenie - u Tomasza widac ja
       // w danych: 78% importu przypada na tania strefe, podczas gdy rozladowywanie
       // "kiedy popadnie" dawaloby 63%.
-      const wstrzymaj = trybStrefowy && strefaTania && strefaTania[h] === '1';
+      const wstrzymaj = trybStrefowy && strefaTania && strefaTania[h] === 1;
       if (niedobor > 0 && soc > 0 && !wstrzymaj) {
         const dostepne = soc * sprRozlad;
         const oddane = Math.min(niedobor, mocMagazynu, dostepne);
@@ -248,10 +246,10 @@ export function oknoPrzedDrogaStrefa(maska, k) {
   const n = maska.length;
   const okno = new Uint8Array(n);
   for (let h = 0; h < n; h++) {
-    if (maska[h] !== '1') continue;
+    if (maska[h] !== 1) continue;
     // czy w ciagu najblizszych k godzin zaczyna sie strefa droga
     for (let d = 1; d <= k; d++) {
-      if (maska[(h + d) % n] !== '1') { okno[h] = 1; break; }
+      if (maska[(h + d) % n] !== 1) { okno[h] = 1; break; }
     }
   }
   return okno;

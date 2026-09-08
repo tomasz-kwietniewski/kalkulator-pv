@@ -17,8 +17,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { symuluj } from '../src/engine.js';
 import { kosztImportu } from '../src/pricing.js';
+import { maskiProfilu } from '../src/zones.js';
 
 const profile = JSON.parse(readFileSync(new URL('./profiles_raw.json', import.meta.url)));
+const maski = maskiProfilu(profile);
 
 // Pomiar z licznikow falownika za VIII 2025 - VII 2026 (analyze/out/sofar_monthly.json
 // i analyze/out/balance.json w prywatnym repo zuzycie-pradu).
@@ -35,6 +37,7 @@ const INSTALACJA = {
   orientacja: 'poludnie',
   zuzycieDomuKWh: profile.meta.zuzycie_domu_kWh,
   poborAutaKWh: profile.meta.pobor_auta_kWh,
+  maskaStrefy: maski.G12w,
 };
 
 const odchylka = (wynik, cel) => (100 * (wynik - cel)) / cel;
@@ -66,7 +69,7 @@ test('bramka: silnik odtwarza zmierzony import i eksport domu Tomasza', () => {
  */
 test('import trafia we wlasciwe strefy taryfowe', () => {
   const r = symuluj(INSTALACJA, profile);
-  const k = kosztImportu(r.imp, profile, 'G12w');
+  const k = kosztImportu(r.imp, maski.G12w, 'G12w');
   const d = 100 * (k.udzialTaniej - POMIAR.udzialTaniejG12w);
   console.log(`  udzial taniej strefy: ${(100 * k.udzialTaniej).toFixed(1)}% ` +
     `wobec zmierzonych ${(100 * POMIAR.udzialTaniejG12w).toFixed(1)}% ` +
