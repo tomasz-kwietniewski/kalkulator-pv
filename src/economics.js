@@ -70,6 +70,65 @@ export const WIDELKI_EPS = { min: 2900, max: 5000 };
 export const WIDELKI_OFERT_2025 = { min: 43446, max: 68273, mediana: 55208 };
 
 /**
+ * Widelki rynkowe 2026 - po to, zeby bylo widac, gdzie nasza wycena stoi wobec rynku.
+ * Nasz cennik jest ponizej dolnej granicy dla PV i to jest swiadome (ceny sprzetu ze
+ * sklepu producenta plus narzut, sierpien 2026), ale uzytkownik ma prawo to zobaczyc,
+ * bo zanizony koszt skraca czas zwrotu - czyli te liczbe, po ktora tu przychodzi.
+ *
+ * Zrodlo: Akademia Fotowoltaiki. Ceny instalacji z montazem, kwiecien 2026; ceny
+ * magazynow wrzesien 2026. Wszystko brutto.
+ */
+export const WIDELKI_RYNKOWE = {
+  zrodlo: 'Akademia Fotowoltaiki',
+  pvAktualizacja: 'kwiecień 2026',
+  magazynAktualizacja: 'wrzesień 2026',
+  // instalacja PV z falownikiem i montazem, bez magazynu
+  pv: [
+    { kWp: 5, min: 15500, max: 21100 },
+    { kWp: 8, min: 20600, max: 28300 },
+    { kWp: 10, min: 24000, max: 33100 },
+  ],
+  // cena pojemnosci: od FelicityEss do SolarEdge, srednia z tabeli porownawczej
+  magazynZaKWh: { min: 663, max: 2355, srednia: 1514 },
+  montazMagazynu: { min: 2500, max: 6000 },
+};
+
+/**
+ * Widelki dla konkretnej konfiguracji. Miedzy punktami z tabeli interpolujemy liniowo,
+ * poza nia przedluzamy skrajny odcinek - kalkulator dopuszcza od 0 do 20 kWp, a tabela
+ * konczy sie na 10.
+ */
+export function widelkiRynkowe({ kWp = 0, magazynKWh = 0 } = {}) {
+  const punkty = WIDELKI_RYNKOWE.pv;
+  const naKrancu = (kolumna) => {
+    if (kWp <= 0) return 0;
+    const pierwszy = punkty[0];
+    const ostatni = punkty[punkty.length - 1];
+    if (kWp <= pierwszy.kWp) return (pierwszy[kolumna] / pierwszy.kWp) * kWp;
+    if (kWp >= ostatni.kWp) return (ostatni[kolumna] / ostatni.kWp) * kWp;
+    const i = punkty.findIndex((p) => p.kWp >= kWp);
+    const a = punkty[i - 1];
+    const b = punkty[i];
+    const udzial = (kWp - a.kWp) / (b.kWp - a.kWp);
+    return a[kolumna] + (b[kolumna] - a[kolumna]) * udzial;
+  };
+
+  const magazyn = (granica, montaz) => (magazynKWh > 0
+    ? magazynKWh * WIDELKI_RYNKOWE.magazynZaKWh[granica] + WIDELKI_RYNKOWE.montazMagazynu[montaz]
+    : 0);
+
+  return {
+    min: Math.round(naKrancu('min') + magazyn('min', 'min')),
+    max: Math.round(naKrancu('max') + magazyn('max', 'max')),
+    typowa: Math.round((naKrancu('min') + naKrancu('max')) / 2
+      + (magazynKWh > 0
+        ? magazynKWh * WIDELKI_RYNKOWE.magazynZaKWh.srednia
+          + (WIDELKI_RYNKOWE.montazMagazynu.min + WIDELKI_RYNKOWE.montazMagazynu.max) / 2
+        : 0)),
+  };
+}
+
+/**
  * Stan programow wsparcia. ZWERYFIKOWANY 11.08.2026 na przydomowemagazyny.gov.pl,
  * mojprad.gov.pl i gov.pl. Obszar zmienia sie w trakcie roku - date weryfikacji
  * trzymamy przy danych, zeby bylo widac, jak swieze sa.

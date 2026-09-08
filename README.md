@@ -293,6 +293,11 @@ Różnice między nimi są większe, niż się wydaje, i nie sprowadzają się d
   Sofar HYD8KTL 5 799 zł, jednostka sterująca magazynu 1 299 zł, moduł 5,12 kWh
   5 299 zł (czyli 1 035 zł/kWh), rozdzielnica AC HydBOX 32A 4 299 zł - wszystko brutto.
   Do tego narzut na montaż, konstrukcję, zabezpieczenia i zgłoszenie do operatora.
+- **Widełki rynkowe 2026**: Akademia Fotowoltaiki - ceny instalacji z montażem (kwiecień
+  2026: 10 kW za 24 000 - 33 100 zł) i ceny magazynów (wrzesień 2026: od 663 zł/kWh
+  FelicityEss do 2 355 zł/kWh SolarEdge, średnia 1 514 zł/kWh, montaż osobno 2 500 - 6 000 zł).
+  Pasek pod kwotą skaluje się z wybraną konfiguracją, więc pokazuje widełki dla **Twojej**
+  instalacji, a nie sztywny zakres z jednej wielkości.
 - **Widełki ofert**: sześć ofert zebranych na tym osiedlu w 2025 r. Służą już tylko jako
   odniesienie historyczne - dzisiejsza wycena wypada poniżej, bo sprzęt przez rok staniał.
 

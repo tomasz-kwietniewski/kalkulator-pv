@@ -14,6 +14,7 @@ import {
   CENNIK_ODNIESIENIA, POZYCJE_KOSZTU, pozycjeZCennika, sumaPozycji, rozdzielKwote,
   kosztInstalacji, ulgaTermomodernizacyjna, kaskadaNakladu, zwrot, zwrotDwutorowo,
   ULGA, WIDELKI_OFERT_2025, WIDELKI_EPS, PME2, dotacjaPME2, cenaSklepowaMagazynu,
+  widelkiRynkowe,
 } from '../src/economics.js';
 
 const profile = JSON.parse(readFileSync(new URL('./profiles_raw.json', import.meta.url)));
@@ -299,4 +300,31 @@ test('cena sklepowa magazynu liczy sie skokowo, po modulach', () => {
   // Powyzej 20,48 kWh potrzebna jest druga jednostka sterujaca.
   assert.equal(cenaSklepowaMagazynu(25).kwota, 2 * 1299 + 5 * 5299);
   assert.equal(cenaSklepowaMagazynu(0).kwota, 0);
+});
+
+test('widelki rynkowe skaluja sie z konfiguracja', () => {
+  const male = widelkiRynkowe({ kWp: 4, magazynKWh: 0 });
+  const duze = widelkiRynkowe({ kWp: 10, magazynKWh: 0 });
+  assert.ok(male.min < duze.min && male.max < duze.max, 'wieksza instalacja kosztuje wiecej');
+  assert.ok(male.min < male.typowa && male.typowa < male.max, 'typowa lezy w widelkach');
+
+  // 9 kWp musi wypasc miedzy punktami tabeli dla 8 i 10 kWp
+  const dziewiec = widelkiRynkowe({ kWp: 9, magazynKWh: 0 });
+  assert.ok(dziewiec.min > 20600 && dziewiec.min < 24000, `min ${dziewiec.min}`);
+  assert.ok(dziewiec.max > 28300 && dziewiec.max < 33100, `max ${dziewiec.max}`);
+
+  // magazyn dokłada pojemnosc i montaz
+  const zMagazynem = widelkiRynkowe({ kWp: 9, magazynKWh: 15 });
+  assert.ok(zMagazynem.min - dziewiec.min > 15 * 663, 'magazyn dolicza tez montaz');
+  assert.equal(widelkiRynkowe({ kWp: 0, magazynKWh: 0 }).max, 0);
+});
+
+test('nasza wycena odniesienia miesci sie w widelkach rynkowych', () => {
+  // Kalkulator ma prawo byc tanszy od rynku, ale nie moze wypasc calkiem poza skala -
+  // wtedy albo cennik sie zestarzal, albo widelki trzeba odswiezyc.
+  const pozycje = pozycjeZCennika({ kWp: 9, magazynKWh: 15, zasilanieAwaryjne: false });
+  const nasza = sumaPozycji(pozycje);
+  const w = widelkiRynkowe({ kWp: 9, magazynKWh: 15 });
+  assert.ok(nasza > w.min * 0.75 && nasza < w.max,
+    `nasza wycena ${nasza} wobec widelek ${w.min}-${w.max}`);
 });

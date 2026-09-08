@@ -14,7 +14,7 @@ import { DOMY, profilZuzycia, opisDomu } from './domy.js';
 import {
   pozycjeZCennika, sumaPozycji, rozdzielKwote, POZYCJE_KOSZTU,
   kaskadaNakladu, zwrot, zwrotDwutorowo, dotacjaPME2, cenaSklepowaMagazynu,
-  WIDELKI_OFERT_2025, WIDELKI_EPS, DOTACJE, PME2,
+  WIDELKI_OFERT_2025, WIDELKI_EPS, WIDELKI_RYNKOWE, widelkiRynkowe, DOTACJE, PME2,
 } from './economics.js';
 import {
   rysujProfilDoby, rysujProfilMiesiecy,
@@ -373,7 +373,7 @@ function przelicz() {
   rysujHero(p, wybrany);
   rysujPme2(p, pozycje);
   rysujDotacje(p, wybrany);
-  rysujPasek(sumaPozycji(pozycje));
+  rysujPasek(sumaPozycji(pozycje), p);
   rysujMiesiace($('wykresMies'), warianty[2].wynik.miesiace);
   rysujWykresZwrotu(warianty);
   rysujEps(p);
@@ -730,18 +730,50 @@ function rysujDotacje(p, w) {
       : 'nie uwzględniamy jej w wyniku. Odliczenie od dochodu przy zerowym podatku jest warte zero.'}</p>`;
 }
 
-function rysujPasek(koszt) {
-  const { min, max } = WIDELKI_OFERT_2025;
-  const skalaMin = 30000, skalaMax = 80000;
-  const pct = (v) => (100 * (v - skalaMin)) / (skalaMax - skalaMin);
+/**
+ * Pasek widelek rynkowych. Skaluje sie z konfiguracja, bo sztywny zakres z szesciu ofert
+ * na 9 kWp bylby dla instalacji 4 kWp mylacy. Znacznik to nasza wycena - stoi zwykle
+ * blisko dolnej granicy i tak ma byc, ale uzytkownik ma to widziec.
+ */
+function rysujPasek(koszt, p) {
+  const w = widelkiRynkowe({ kWp: p.kWp, magazynKWh: p.magazynKWh });
   const el = $('pasekOfert');
-  el.querySelector('.zakres').style.left = pct(min) + '%';
-  el.querySelector('.zakres').style.width = (pct(max) - pct(min)) + '%';
+  if (!w.max) {
+    el.style.visibility = 'hidden';
+    $('pasekMin').textContent = '';
+    $('pasekMax').textContent = '';
+    $('pasekOpis').textContent = '';
+    $('pasekZrodlo').textContent = '';
+    return;
+  }
+  el.style.visibility = 'visible';
+  const skalaMin = 0;
+  const skalaMax = Math.max(w.max, koszt) * 1.05;
+  const pct = (v) => (100 * (v - skalaMin)) / (skalaMax - skalaMin);
+
+  el.querySelector('.zakres').style.left = pct(w.min) + '%';
+  el.querySelector('.zakres').style.width = (pct(w.max) - pct(w.min)) + '%';
   el.querySelector('.znacznik').style.left = Math.min(99, Math.max(0, pct(koszt))) + '%';
-  $('kosztInfo').textContent = kosztRecznie
-    ? 'Liczymy z Twoich kwot.'
-    : 'Ceny sprzętu ze sklepu producenta (sierpień 2026) plus montaż. '
-      + `Zasilanie awaryjne wyceniano od ${zl(WIDELKI_EPS.min)} do ${zl(WIDELKI_EPS.max)}.`;
+
+  $('pasekMin').textContent = zl(w.min);
+  $('pasekMax').textContent = zl(w.max);
+  $('pasekOpis').textContent = `widełki rynkowe dla ${liczba(p.kWp)} kWp`
+    + `${p.magazynKWh > 0 ? ` i ${liczba(p.magazynKWh)} kWh magazynu` : ' bez magazynu'}`;
+
+  const ponizej = koszt < w.min;
+  $('pasekZrodlo').innerHTML = `Typowa wycena rynkowa takiej instalacji to <b>${zl(w.typowa)}</b>.`
+    + ` Widełki z ${WIDELKI_RYNKOWE.zrodlo}: instalacje ${WIDELKI_RYNKOWE.pvAktualizacja},`
+    + ` magazyny ${WIDELKI_RYNKOWE.magazynAktualizacja} (od ${zl(WIDELKI_RYNKOWE.magazynZaKWh.min)}`
+    + ` do ${zl(WIDELKI_RYNKOWE.magazynZaKWh.max)} za kWh, montaż osobno`
+    + ` ${zl(WIDELKI_RYNKOWE.montazMagazynu.min)} - ${zl(WIDELKI_RYNKOWE.montazMagazynu.max)}).`
+    + (ponizej
+      ? ' Twój znacznik stoi na lewo od paska - nasza wycena liczy ceny sprzętu ze sklepu'
+        + ' producenta plus narzut na montaż, a oferty pod klucz bywają droższe. Jeśli masz'
+        + ' konkretną ofertę, wpisz jej kwotę: czas zwrotu policzy się od Twoich pieniędzy.'
+      : '')
+    + ` Dla porównania sześć ofert zebranych na tym osiedlu w 2025 mieściło się`
+    + ` między ${zl(WIDELKI_OFERT_2025.min)} a ${zl(WIDELKI_OFERT_2025.max)}`
+    + ` (mediana ${zl(WIDELKI_OFERT_2025.mediana)}) - dla 9 kWp z magazynem 15 kWh.`;
 }
 
 /* --- sekcja 6: zasilanie awaryjne ------------------------------------------------ */

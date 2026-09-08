@@ -253,6 +253,15 @@ bez faktury z wydzieloną robocizną nie da się rozdzielić: (1) układanie kos
 montaż, gwarancja i zgłoszenie do operatora, których sklep nie zawiera. Nie pisać więc,
 że faktura była zawyżona o konkretną kwotę.
 
+Od 8.09.2026 obok wyliczonej kwoty stoi **pasek widełek rynkowych** (`widelkiRynkowe`
+w `economics.js`), który skaluje się z konfiguracją: ceny instalacji z Akademii
+Fotowoltaiki (kwiecień 2026) plus ceny magazynów za kWh z montażem (wrzesień 2026).
+Domyślnych liczb celowo nie ruszaliśmy - kalkulator dalej liczy z cen sprzętu ze sklepu
+producenta, a pasek pokazuje, gdzie ta wycena stoi wobec rynku. Przy 9 kWp i 15 kWh nasze
+37 250 zł mieści się tuż nad dolną granicą widełek 34 745 - 72 025 zł (typowa 53 460 zł).
+Poprzedni pasek pokazywał sztywne 43 446 - 68 273 zł z sześciu ofert z osiedla, co przy
+instalacji 4 kWp było po prostu mylące; te oferty zostały w tekście pod paskiem.
+
 Do rozstrzygnięcia z Tomaszem: czy dołożyć drugi cennik do wyboru („sprzęt 2026" obok
 „oferta pod klucz 2025"), czy przestawić domyślny. Do sprawdzenia przy okazji: moduły
 wchodzą po 5,12 kWh, a kolumna mieści podobno 4 sztuki (do 20,48 kWh) - jeśli tak, koszt
