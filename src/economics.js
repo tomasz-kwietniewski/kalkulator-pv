@@ -130,11 +130,11 @@ export function widelkiRynkowe({ kWp = 0, magazynKWh = 0 } = {}) {
 }
 
 /**
- * Stan programow wsparcia. ZWERYFIKOWANY 11.08.2026 na przydomowemagazyny.gov.pl,
+ * Stan programow wsparcia. ZWERYFIKOWANY 6.10.2026 na przydomowemagazyny.gov.pl,
  * mojprad.gov.pl i gov.pl. Obszar zmienia sie w trakcie roku - date weryfikacji
  * trzymamy przy danych, zeby bylo widac, jak swieze sa.
  */
-export const DOTACJE_SPRAWDZONE = '2026-08-11';
+export const DOTACJE_SPRAWDZONE = '2026-10-06';
 
 export const DOTACJE = {
   mojPrad6: {
@@ -160,22 +160,24 @@ export const DOTACJE = {
     nazwa: 'Przydomowe Magazyny Energii, część 2 (Fundusz Modernizacyjny)',
     aktywny: false,
     planowany: true,
-    info: 'Nabór planowany na III kwartał 2026, budżet do 1 mld zł. Dotacja na magazyn '
+    info: 'Nabór ciągły od 20.10.2026 (godz. 9:00) do 1.10.2027 albo do wyczerpania '
+      + 'budżetu 1 mld zł. Dotacja na magazyn '
       + 'to 30% kosztów kwalifikowanych, nie więcej niż 800 zł za kWh pojemności i nie '
       + 'więcej niż 16 000 zł przy net-billingu (8 000 zł przy starych opustach). '
       + 'Minimalna pojemność 10 kWh, koszt zakupu z montażem nie może przekroczyć '
       + '3 000 zł za kWh, a przedsięwzięcie musi być rozpoczęte nie wcześniej niż '
-      + '1.11.2025. Osobno do 2 000 zł na baterie albo falownik hybrydowy wyprodukowany '
-      + 'w Unii. Wnioski przez Generator (GWD). To jedyna realna ścieżka dofinansowania '
-      + 'magazynu dla kogoś, kto instaluje teraz - ale dopóki nabór nie ruszy, '
-      + 'w kalkulatorze dotacja zostaje na zero.',
+      + '1.11.2025. Osobno do 2 000 zł na falownik hybrydowy wyprodukowany w Unii '
+      + 'i do 1 000 zł na magazyn ciepła, razem nie więcej niż 19 000 zł na punkt poboru. '
+      + 'Wnioski przez Generator (GWD). To jedyna realna ścieżka dofinansowania '
+      + 'magazynu dla kogoś, kto instaluje teraz. Kalkulator domyślnie liczy bez tej '
+      + 'kwoty, bo pieniądze przychodzą dopiero po rozpatrzeniu wniosku.',
     minimalnaPojemnoscKWh: 10,
   },
 };
 
 /**
- * Warunki PME 2. ZWERYFIKOWANE 14.08.2026 na przydomowemagazyny.gov.pl/o-programie.
- * Regulamin naboru jeszcze nie zostal opublikowany, wiec to sa zapowiedzi, nie przepis.
+ * Warunki PME 2. ZWERYFIKOWANE 6.10.2026 z regulaminem naboru (przydomowemagazyny.gov.pl,
+ * Regulamin-naboru-wnioskow-PP-PME_czesc_2-FM.pdf) - wartosci ponizej sa z regulaminu.
  */
 export const PME2 = {
   minimalnaPojemnoscKWh: 10,

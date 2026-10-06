@@ -312,9 +312,10 @@ pozycji osobno**, żeby suma pozycji dalej była dokładnie tym, co pokazuje pol
 
 ## Sprawy otwarte
 
-- **Nabór PME część 2** (Fundusz Modernizacyjny) planowany na III kwartał 2026 -
-  gdy ruszy, wpisać realne kwoty do `src/economics.js`. To jedyna ścieżka dofinansowania
-  magazynu dla kogoś, kto instaluje teraz.
+- **Nabór PME część 2** (Fundusz Modernizacyjny): od 20.10.2026 do 1.10.2027 albo do
+  wyczerpania 1 mld zł. Kwoty w `src/economics.js` (`PME2`) sprawdzone 6.10.2026 z regulaminem
+  naboru i zgodne. Do pilnowania: czy budżet się nie wyczerpał - wtedy `DOTACJE.pme2`
+  trzeba przestawić na nieaktywny.
 - **Limit obwodu awaryjnego** w domu odniesienia (3,6 kW wobec 8 kW z karty falownika) -
   hipoteza: zabezpieczenie 16 A. Do potwierdzenia w rozdzielnicy.
 - **Ceny wariantu backupu całego domu** (rozdzielnica z automatycznym przełącznikiem) -

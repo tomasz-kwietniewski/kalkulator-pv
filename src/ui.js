@@ -698,8 +698,9 @@ function rysujPme2(p, pozycje) {
 
   el.innerHTML = `<div class="naglowek">Dotacja z programu Przydomowe Magazyny Energii</div>
     <div class="kwota">ok. ${zl(d.kwota)}</div>
-    <div class="wiaze">${opisReguly} Nabór planowany na III kwartał 2026 - dopóki nie ruszy,
-    wynik liczymy bez tej kwoty.</div>
+    <div class="wiaze">${opisReguly} Nabór trwa od 20.10.2026 do 1.10.2027 albo do wyczerpania
+    budżetu. Wynik liczymy bez tej kwoty, bo dotacja przychodzi dopiero po rozpatrzeniu
+    wniosku.</div>
     <div class="akcjarow">
       <button class="akcja maly noprint" data-akcja="wstawDotacje">Policz z tą dotacją</button>
       <span class="info" style="font-size:12.5px;color:var(--faint)">wpisze ${zl(d.kwota)}
