@@ -281,7 +281,9 @@ Poprzedni pasek pokazywał sztywne 43 446 - 68 273 zł z sześciu ofert z osiedl
 instalacji 4 kWp było po prostu mylące; te oferty zostały w tekście pod paskiem.
 
 Do rozstrzygnięcia z Tomaszem: czy dołożyć drugi cennik do wyboru („sprzęt 2026" obok
-„oferta pod klucz 2025"), czy przestawić domyślny. **Zrobione 8.09.2026:** koszt magazynu liczy się skokowo. `pojemnoscModulowa(kWh, modulKWh)`
+„oferta pod klucz 2025"), czy przestawić domyślny.
+
+**Zrobione 8.09.2026:** koszt magazynu liczy się skokowo. `pojemnoscModulowa(kWh, modulKWh)`
 zaokrągla pojemność w górę do całych modułów i tak liczy się zarówno cena, jak i praca
 magazynu; suwak pokazuje realną pojemność. Wcześniej liniowa cena przy 13 kWh dawała
 16 300 zł, czyli **mniej niż same moduły w sklepie producenta** (17 196 zł), a przy 16 kWh
