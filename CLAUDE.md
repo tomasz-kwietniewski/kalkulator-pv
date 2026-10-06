@@ -11,8 +11,8 @@ w prywatnym repozytorium `zuzycie-pradu` (`analyze/kalkulator/build_profiles.py`
 i `fetch_rce.py`) i czyta 54 MB surowych logów z falownika.
 
 **Nie przenosić generatora tutaj.** Rozdzielenie repozytoriów nie jest kwestią porządku:
-prywatne repo zawiera adres, numery PPE, faktury i dokumentację sporu sądowego, a to repo
-jest publiczne. Granicę przekracza wyłącznie anonimowy artefakt - znormalizowane kształty
+prywatne repo zawiera dane osobowe i dokumenty Tomasza, a to repo jest publiczne. Granicę
+przekracza wyłącznie anonimowy artefakt - znormalizowane kształty
 godzinowe bez żadnych danych identyfikujących.
 
 Żeby przeliczyć profile od nowa: uruchomić generator w prywatnym repo i skopiować
@@ -234,26 +234,18 @@ o te same 5 kWh: Deye +6 330, Huawei +8 200, Sigenergy +8 610.
 
 ## Cennik odniesienia jest skrzywiony pod dotację - decyzja czeka
 
-Cennik z arkusza (wyżej) to ceny handlowe. Ale **faktura końcowa ma zupełnie inne
-rozbicie tej samej instalacji** i to ono pokazuje, jak działał mechanizm dotacji:
-
-| Pozycja z faktury 16/07/2025 | Netto | Brutto |
-|---|---|---|
-| Instalacja PV 9 kW z montażem (18 modułów, falownik, stelaż, zabezpieczenia) | 15 509 zł | 16 750 zł |
-| Magazyn BTS E15-DS5 (3 moduły + jednostka sterująca, montaż i konfiguracja) | 30 324 zł | 32 750 zł |
-| Razem | 45 833 zł | 49 500 zł |
-
-Sama oferta podawała **jedną kwotę 50 000 zł brutto** - rozbicie pojawiło się dopiero
-na fakturze. Magazynowi przypisano 32 750 zł, czyli 2 132 zł/kWh, przy cenie tego samego
-zestawu w sklepie producenta ok. 17 200 zł. Odwrotnie niż w cenniku handlowym, gdzie
-magazyn 10 kWh kosztował 15 599 zł, a więc mniej niż połowę.
+Cennik z arkusza (wyżej) to ceny handlowe. Ale **faktura końcowa domu odniesienia rozpisuje
+tę samą instalację zupełnie inaczej**: oferta podawała jedną kwotę za całość, a na fakturze
+magazynowi przypisano mniej więcej dwukrotność ceny tego samego zestawu w sklepie producenta,
+części PV odpowiednio mniej. To repo jest publiczne, więc kwoty z faktury są tylko w pamięci
+projektu (notatka `oferty-pv-dokumenty`), a oryginał w prywatnym `zuzycie-pradu`.
 
 Powód: Mój Prąd 6.0 dawał **do 7 000 zł na PV z magazynem, do 16 000 zł na magazyn
 energii i do 5 000 zł na magazyn ciepła**, a dofinansowanie nie mogło przekroczyć
 **połowy kosztów kwalifikowanych**. Widać to w ofercie VIMA: magazyn „cena netto
 17 372,94 zł → 8 686,47 zł" (zadziałała połowa kosztu), a PV 7 000 zł przy koszcie
 29 222,30 zł (zadziałał sufit kwotowy). Żeby sięgnąć po pełne 16 000 zł, magazyn musiał
-być na fakturze pozycją rzędu 32 000 zł. Stąd te 30 324 zł.
+być na fakturze pozycją rzędu 32 000 zł - i tak to wygląda na fakturze domu odniesienia.
 **Suma jest wiarygodna, rozbicie nie.** To ma znaczenie, bo cała odpowiedź „czy magazyn
 się zwraca" stoi na tym rozbiciu.
 
@@ -264,7 +256,7 @@ kwotowe osobno na każdy element, a połowa kosztów jako sufit całości.
 
 Ceny katalogowe zebrane 12.08.2026 ze sklepu producenta (sofar-sklep.pl), brutto:
 
-| Pozycja | Faktura 2025 | Sklep 2026 | Uwaga |
+| Pozycja | Wykonawca 2025 | Sklep 2026 | Uwaga |
 |---|---|---|---|
 | Falownik HYD8KTL | 8 999 zł | 5 799 zł | ten sam model co w domu odniesienia |
 | Jednostka sterująca BDU (BTS 5K-BDU) | 1 599 zł | 1 299 zł | prawie się zgadza |
@@ -308,7 +300,7 @@ zostają z poprzedniej konfiguracji.
 to samo w `widelkiRynkowe`). Kwota „18 896 zł" udaje precyzję, której nie ma - sama cena
 modułu różni się między sklepami o kilkaset złotych. Zaokrąglenie idzie **na każdej
 pozycji osobno**, żeby suma pozycji dalej była dokładnie tym, co pokazuje pole „Razem"
-(punkt 5 niżej).
+(punkt 5 w sekcji „Wymagania, które łatwo złamać nieuważnie”).
 
 ## Sprawy otwarte
 
