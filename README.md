@@ -34,8 +34,9 @@ niewygodna i dlatego warto ją mieć wprost:
 | 15,36 kWh | 70% | 2 467 kWh | 4,8 roku | 13,2 roku |
 | 20,48 kWh | 73% | 2 200 kWh | 5,3 roku | 14,3 roku |
 
-(9 kWp, zużycie 11 MWh, taryfa G12w, ceny sprzętu z sierpnia 2026 plus montaż,
-ulga 12%, wzrost cen energii 4% rocznie, bez zasilania awaryjnego)
+(9 kWp, zużycie 11 MWh, taryfa G12w, ceny sprzętu ze sklepu producenta z sierpnia 2026
+plus montaż, zaokrąglone do 100 zł, magazyn z modułów 5,12 kWh, ulga 12%, wzrost cen
+energii 4% rocznie, bez zasilania awaryjnego)
 
 Magazyn robi dokładnie to, czego się po nim spodziewamy: podnosi autokonsumpcję z 45%
 do niemal 70% i zatrzymuje w domu ponad 2 000 kWh rocznie, które inaczej poszłyby do
@@ -44,7 +45,7 @@ niż oszczędza. Kupuje się nim niezależność od sieci i zasilanie awaryjne, 
 zwrot. Kalkulator mówi to wprost, zamiast chować za jedną sumaryczną liczbą.
 
 Widać też, że sam magazyn wypada najlepiej w okolicach **10 kWh** - mniejszy nie zdąży
-się nasycić przez dobę, większy stoi pusty przez większość roku. A powyżej ok. 22 kWh
+się nasycić przez dobę, większy stoi pusty przez większość roku. A powyżej ok. 22,5 kWh
 każde kolejne 2,5 kWh pojemności podnosi autokonsumpcję o mniej niż punkt procentowy.
 
 ## Jak sprawdzono, że nie zmyśla
@@ -54,15 +55,16 @@ z tym, co naprawdę pokazały liczniki:
 
 | Wielkość | Symulacja | Pomiar | Odchyłka |
 |---|---|---|---|
-| Pobór z sieci | 5 604 kWh | 5 642 kWh | -0,7% |
+| Pobór z sieci | 5 603 kWh | 5 642 kWh | -0,7% |
 | Oddanie do sieci | 2 354 kWh | 2 236 kWh | +5,3% |
-| Udział taniej strefy G12w | 75,9% | 77,5% | -1,6 pkt proc. |
+| Udział taniej strefy G12w | 75,9% | 78,1% | -2,2 pkt proc. |
 | Największy błąd miesięczny | - | - | 74 kWh |
 
-Uwaga do wiersza o strefach: 77,5% policzył generator w prywatnym repozytorium, a robił
-to według zmiany czasu zamiast według sezonu z taryfy (lato 1.04 - 30.09). Kalkulator
-liczy strefy zgodnie z taryfą, więc te dwie liczby dzieli nie tylko dokładność modelu,
-ale i definicja sezonu - do zestrojenia przy następnym przeliczaniu profili.
+Uwaga do wiersza o strefach: pomiar i model liczą dziś strefy tą samą definicją, czyli
+według sezonu z taryfy (lato 1.04 - 30.09), a nie według zmiany czasu. Generator
+w prywatnym repozytorium robił to wcześniej inaczej i podawał 77,5%; po poprawce
+(8.09.2026) jego maski stref zgadzają się z kalkulatorem co do godziny przez cały rok.
+Różnica 2,2 punktu procentowego jest więc w całości błędem modelu, a nie różnicą definicji.
 
 Dwa parametry modelu (pobór własny układu i poziom dobierania magazynu z sieci)
 są skalibrowane na tym samym roku, więc roczna zgodność jest częściowo z definicji.
@@ -102,7 +104,7 @@ Profile generuje skrypt `analyze/kalkulator/build_profiles.py` w prywatnym repoz
 z danymi źródłowymi. Do tego repozytorium trafia wyłącznie gotowy, anonimowy artefakt -
 bez adresu, numerów PPE, kwot faktur i numerów seryjnych.
 
-## Stan przepisów i programów (zweryfikowany 11.08.2026)
+## Stan przepisów i programów (zweryfikowany 11.08.2026, PME 2 - 6.10.2026)
 
 - **Mój Prąd 6.0** - zamknięty 12.09.2025, wyczerpana pula. Dawał do 7 000 zł na
   fotowoltaikę z magazynem, do 16 000 zł na magazyn energii i do 5 000 zł na magazyn
@@ -114,13 +116,15 @@ bez adresu, numerów PPE, kwot faktur i numerów seryjnych.
 - **Przydomowe Magazyny Energii cz. 1 (KPO)** - nabór 30.03 - 19.06.2026, zamknięty.
   Był zwrotem kosztów instalacji **już wykonanych** (wydatki 1.08.2024 - 31.10.2025),
   do 28 000 zł i do 50% kosztów. Dla decyzji podejmowanej dziś bez znaczenia.
-- **Przydomowe Magazyny Energii cz. 2 (Fundusz Modernizacyjny)** - planowany na
-  III kwartał 2026, budżet do 1 mld zł. Dotacja na magazyn to **30% kosztów, nie więcej
-  niż 800 zł/kWh i nie więcej niż 16 000 zł** przy net-billingu (8 000 zł przy starych
-  opustach). Minimum **10 kWh**, koszt zakupu z montażem do 3 000 zł/kWh, rozpoczęcie
-  przedsięwzięcia nie wcześniej niż 1.11.2025. Osobno do 2 000 zł na sprzęt z Unii.
-  Kalkulator **pokazuje szacunek, ale nie wlicza go w wynik** - nabór nie ruszył
-  i regulaminu jeszcze nie ma.
+- **Przydomowe Magazyny Energii cz. 2 (Fundusz Modernizacyjny)** - nabór ciągły od
+  20.10.2026 do 1.10.2027 albo do wyczerpania budżetu 1 mld zł, warunki sprawdzone
+  z regulaminem naboru. Dotacja na magazyn to **30% kosztów, nie więcej niż 800 zł/kWh
+  i nie więcej niż 16 000 zł** przy net-billingu (8 000 zł przy starych opustach).
+  Minimum **10 kWh**, koszt zakupu z montażem do 3 000 zł/kWh, rozpoczęcie przedsięwzięcia
+  nie wcześniej niż 1.11.2025. Osobno do 2 000 zł na falownik hybrydowy wyprodukowany
+  w Unii i do 1 000 zł na magazyn ciepła, razem nie więcej niż 19 000 zł na punkt poboru.
+  Kalkulator **pokazuje szacunek, ale domyślnie nie wlicza go w wynik** - pieniądze
+  przychodzą dopiero po rozpatrzeniu wniosku.
 
   Warto wiedzieć, co z tych limitów wynika: przy realnych cenach magazynu (ok. 1 100 zł/kWh)
   **zawsze wiąże 30% kosztu**, nigdy 800 zł/kWh ani 16 000 zł. Żeby wyjąć pełne 16 000 zł,
@@ -245,12 +249,12 @@ względem temperatury (Open-Meteo ERA5 dla tego samego roku):
 
 Z tego powstają cztery warianty do wyboru:
 
-| Wariant | Ogrzewanie w rocznym zużyciu | Autokonsumpcja przy 9 kWp i 15 kWh | Zwrot |
+| Wariant | Ogrzewanie w rocznym zużyciu | Autokonsumpcja przy 9 kWp i 15,36 kWh | Zwrot |
 |---|---|---|---|
-| Pompa ciepła (profil zmierzony) | 43% | 70% | 4,7 roku |
-| Ogrzewanie elektryczne bez pompy | 75% | 65% | 4,9 roku |
-| Ogrzewanie elektryczne akumulacyjne (nocne) | 75% | **47%** | **6,7 roku** |
-| Ogrzewanie nieelektryczne (gaz, pellet, węgiel) | 0% | 76% | 4,5 roku |
+| Pompa ciepła (profil zmierzony) | 43% | 70% | 4,8 roku |
+| Ogrzewanie elektryczne bez pompy | 75% | 65% | 5 lat |
+| Ogrzewanie elektryczne akumulacyjne (nocne) | 75% | **47%** | **6,8 roku** |
+| Ogrzewanie nieelektryczne (gaz, pellet, węgiel) | 0% | 77% | 4,5 roku |
 
 Najciekawszy jest wiersz trzeci: **ogrzewanie akumulacyjne obniża autokonsumpcję z 70%
 na 47% i wydłuża zwrot o dwa lata**, bo prąd idzie nocą, kiedy fotowoltaika nie pracuje.

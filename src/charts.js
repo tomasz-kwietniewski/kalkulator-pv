@@ -9,7 +9,7 @@
  * bo popularna chartjs-plugin-annotation to kolejny plik do pobrania, a strona ma nie
  * wykonywac po zaladowaniu ani jednego zapytania.
  */
-import { kwh, proc, zLatami } from './format.js';
+import { kwh, proc, zLatami, liczba } from './format.js';
 
 export const KOLORY = {
   zielony: '#1d9e75',
@@ -318,7 +318,7 @@ export function rysujNasycenie(canvas, krzywa, wybrana) {
         tooltip: { callbacks: { label: (c) => `${c.dataset.label.split(' - ')[0]}: ${proc(c.parsed.y, 1)}` } },
         znacznik: {
           punkty: wybrana > 0
-            ? [{ x: wybrana, kolor: KOLORY.koral, etykieta: `Twój wybór: ${wybrana} kWh` }]
+            ? [{ x: wybrana, kolor: KOLORY.koral, etykieta: `Twój wybór: ${liczba(wybrana)} kWh` }]
             : [],
         },
       },

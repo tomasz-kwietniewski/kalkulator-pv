@@ -136,7 +136,7 @@ Rzeczy, które trzeba przy tym trzymać w głowie:
   prądu na ciepło idzie przez model COP (ułamek Carnota, zasilanie 35°C, SCOP wychodzi
   3,86) i to jest **założenie, nie pomiar** - tak też jest opisane w README.
 - **Wariant akumulacyjny jest najważniejszym wynikiem tego etapu**: przeniesienie grzania
-  na noc zbija autokonsumpcję z 70% na 47% i wydłuża zwrot z 4,7 do 6,7 roku. Gdyby
+  na noc zbija autokonsumpcję z 70% na 47% i wydłuża zwrot z 4,8 do 6,8 roku. Gdyby
   kiedyś wyszło inaczej, najpierw sprawdzić, czy okno nocne 22-6 nie rozjechało się
   ze strefami taryfowymi.
 - **Wczytany plik użytkownika ma pierwszeństwo przed archetypem** i podpowiedź przy polu

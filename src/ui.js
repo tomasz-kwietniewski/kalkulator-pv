@@ -319,7 +319,7 @@ function usunProfilWlasny() {
 
 function przelicz() {
   const p = czytajPola();
-  $('kwpOut').textContent = p.kWp + ' kWp';
+  $('kwpOut').textContent = liczba(p.kWp) + ' kWp';
   $('magazynOut').textContent = p.magazynKWh > 0
     ? `${liczba(p.magazynKWh)} kWh`
     : 'bez magazynu';
@@ -349,7 +349,7 @@ function przelicz() {
 
   const warianty = [
     { nazwa: 'Bez fotowoltaiki', kWp: 0, magazyn: 0, koszt: 0 },
-    { nazwa: `Sama fotowoltaika ${p.kWp} kWp`, kWp: p.kWp, magazyn: 0, koszt: bezMagazynu },
+    { nazwa: `Sama fotowoltaika ${liczba(p.kWp)} kWp`, kWp: p.kWp, magazyn: 0, koszt: bezMagazynu },
     {
       nazwa: `Fotowoltaika + magazyn ${liczba(magazynPokazowy)} kWh`
         + (p.magazynKWh > 0 ? '' : ' (dla porównania)'),
@@ -399,7 +399,7 @@ function rysujKarty(p, w, karta) {
 
   $('podsumowanie').innerHTML = pelny.kWp === 0
     ? 'Ustaw moc fotowoltaiki powyżej zera, żeby zobaczyć wynik.'
-    : `Przy zużyciu ${kwh(p.zuzycieDomuKWh)} rocznie instalacja ${pelny.kWp} kWp`
+    : `Przy zużyciu ${kwh(p.zuzycieDomuKWh)} rocznie instalacja ${liczba(pelny.kWp)} kWp`
       + (p.magazynKWh > 0 ? ` z magazynem ${liczba(p.magazynKWh)} kWh` : ' bez magazynu')
       + ` obniża rachunek z <b>${zl(w[0].rachunek.brutto)}</b> `
       + `do <b>${zl(karta.rachunek.brutto)}</b> rocznie.`;
@@ -410,7 +410,7 @@ function rysujKarty(p, w, karta) {
       `${liczba(karta.kWp)} kWp${p.magazynKWh > 0 ? ' + ' + liczba(p.magazynKWh) + ' kWh' : ', bez magazynu'}`],
     ['Oszczędność rocznie', zl(karta.oszczednosc), 'g',
       p.magazynKWh > 0 ? `w tym dzięki magazynowi: ${zl(dodatekMagazynu)}`
-        : `magazyn ${pelny.magazyn} kWh dodałby ${zl(dodatekMagazynu)}`],
+        : `magazyn ${liczba(pelny.magazyn)} kWh dodałby ${zl(dodatekMagazynu)}`],
     ['Autokonsumpcja', proc(karta.wynik.autokonsumpcja), 'b',
       `tyle własnego prądu zużywasz, reszta idzie do sieci`],
   ].map(([lab, val, kl, foot]) =>
@@ -544,9 +544,9 @@ function rysujMagazyn(p, w) {
     + `<div class="foot">${foot}</div></div>`).join('');
 
   $('przeplywy').innerHTML =
-    kolumnaPrzeplywu('Sama fotowoltaika', `${p.kWp} kWp, bez magazynu`, sama.wynik)
+    kolumnaPrzeplywu('Sama fotowoltaika', `${liczba(p.kWp)} kWp, bez magazynu`, sama.wynik)
     + kolumnaPrzeplywu(`Z magazynem ${liczba(pojemnosc)} kWh`,
-      `${p.kWp} kWp` + (hipotetyczny ? ' - wariant porównawczy' : ''), pelny.wynik);
+      `${liczba(p.kWp)} kWp` + (hipotetyczny ? ' - wariant porównawczy' : ''), pelny.wynik);
 
   const zSieciDoMagazynu = pelny.wynik.doMagazynuZSieci;
   $('przeplywOpis').innerHTML = `Straty ładowania i rozładowania magazynu to `
@@ -579,7 +579,7 @@ function rysujKrzywa(p, wybrana) {
     i > 0 && punkt.autokonsumpcja - krzywa[i - 1].autokonsumpcja < 1);
   const wPunkcie = krzywa.find((x) => Math.abs(x.magazynKWh - wybrana) < 1.26);
   $('nasycenieOpis').innerHTML = (wPunkcie
-    ? `Przy ${wybrana} kWh zużywasz u siebie <b>${proc(wPunkcie.autokonsumpcja, 1)}</b> własnej produkcji, `
+    ? `Przy ${liczba(wybrana)} kWh zużywasz u siebie <b>${proc(wPunkcie.autokonsumpcja, 1)}</b> własnej produkcji, `
       + `a ${proc(wPunkcie.samowystarczalnosc, 1)} prądu w domu pochodzi z instalacji. `
     : '')
     + (prog > 0
@@ -595,7 +595,7 @@ function rysujKrzywa(p, wybrana) {
 function rysujKaskade(p, w) {
   if (!w.kaskada) { $('kaskada').innerHTML = ''; return; }
   const k = w.kaskada;
-  const opis = `${p.kWp} kWp`
+  const opis = `${liczba(p.kWp)} kWp`
     + (p.magazynKWh > 0 ? `, magazyn ${liczba(p.magazynKWh)} kWh` : ', bez magazynu')
     + (p.eps ? ', z zasilaniem awaryjnym' : '');
 
