@@ -45,14 +45,14 @@ export const DOMYSLNE = {
   // w drogich godzinach. W falownikach Sofar HYD odpowiada za to tryb "Time of Use".
   //
   // Najpierw wywnioskowane z danych: zuzycie domu przypada na tania strefe w 54%,
-  // produkcja PV w 37%, a zmierzony import az w 77,5% - takiej przewagi nie da sie
+  // produkcja PV w 37%, a zmierzony import az w 78,1% - takiej przewagi nie da sie
   // uzyskac samym magazynowaniem PV. Potem POTWIERDZONE w dokumentacji instalacji
   // domu odniesienia: falownik jest ustawiony na Time of Use na stale.
   //
   // Sam harmonogram (godziny i docelowy poziom naladowania) nie jest udokumentowany,
   // wiec docelowyPoziomZSieci pozostaje parametrem skalibrowanym na zmierzonym roku.
   // Domyslnie WLACZONE dla taryf strefowych, bo tylko z ta funkcja model odtwarza
-  // zmierzony rozklad importu (76% w taniej strefie wobec 77,5% realnie; bez niej
+  // zmierzony rozklad importu (75,9% w taniej strefie wobec 78,1% realnie; bez niej
   // wychodzi 63%, co zawyzaloby rachunek o ok. 390 zl rocznie). Wymaga jednak
   // skonfigurowania falownika - to nie jest zachowanie domyslne po montazu.
   ladowanieZSieci: true,

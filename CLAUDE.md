@@ -136,7 +136,7 @@ Rzeczy, które trzeba przy tym trzymać w głowie:
   prądu na ciepło idzie przez model COP (ułamek Carnota, zasilanie 35°C, SCOP wychodzi
   3,86) i to jest **założenie, nie pomiar** - tak też jest opisane w README.
 - **Wariant akumulacyjny jest najważniejszym wynikiem tego etapu**: przeniesienie grzania
-  na noc zbija autokonsumpcję z 70% na 47% i wydłuża zwrot z 4,7 do 6,7 roku. Gdyby
+  na noc zbija autokonsumpcję z 70% na 47% i wydłuża zwrot z 4,8 do 6,8 roku. Gdyby
   kiedyś wyszło inaczej, najpierw sprawdzić, czy okno nocne 22-6 nie rozjechało się
   ze strefami taryfowymi.
 - **Wczytany plik użytkownika ma pierwszeństwo przed archetypem** i podpowiedź przy polu
@@ -320,8 +320,8 @@ pozycji osobno**, żeby suma pozycji dalej była dokładnie tym, co pokazuje pol
 
 Na profilu domu odniesienia magazyn **wydłuża** czas zwrotu całości (2,9 roku bez
 magazynu, 4,8 roku przy 15,36 kWh), choć podnosi autokonsumpcję z 45% do 70%. Sam magazyn
-zwraca się w ok. 13 latach, najlepiej w okolicach 10 kWh (12,3 roku). Pełna tabela jest
-w `README.md` i była przeliczana 8.09.2026 - po zmianach modelu w etapach 1-6.
+zwraca się w ok. 13 latach, najlepiej w okolicach 10 kWh (12,4 roku). Pełna tabela jest
+w `README.md` i była przeliczana 8.09.2026 - po zmianach modelu w etapach 1-6; 14.11.2026 sprawdzona z tym, co pokazuje strona.
 Liczby biorą się z konfiguracji domyślnej strony: 9 kWp, 11 MWh, G12w u PGE, dach
 południowy wschód/zachód 35°, profil zmierzony.
 
