@@ -320,8 +320,8 @@ pozycji osobno**, żeby suma pozycji dalej była dokładnie tym, co pokazuje pol
 
 Na profilu domu odniesienia magazyn **wydłuża** czas zwrotu całości (2,9 roku bez
 magazynu, 4,8 roku przy 15,36 kWh), choć podnosi autokonsumpcję z 45% do 70%. Sam magazyn
-zwraca się w ok. 13 latach, najlepiej w okolicach 10 kWh (12,3 roku). Pełna tabela jest
-w `README.md` i była przeliczana 8.09.2026 - po zmianach modelu w etapach 1-6.
+zwraca się w ok. 13 latach, najlepiej w okolicach 10 kWh (12,4 roku). Pełna tabela jest
+w `README.md` i była przeliczana 8.09.2026 - po zmianach modelu w etapach 1-6; 14.11.2026 sprawdzona z tym, co pokazuje strona.
 Liczby biorą się z konfiguracji domyślnej strony: 9 kWp, 11 MWh, G12w u PGE, dach
 południowy wschód/zachód 35°, profil zmierzony.
 
